@@ -210,6 +210,53 @@
     return Math.round(sorted[Math.floor((sorted.length - 1) * quantile)] * 100) / 100;
   }
 
+  // ----- annotation_font_policy (captions and footnotes) -----
+  // render/policy/typography_policy.py ANNOTATION_* / CAPTION_* / FOOTNOTE_*.
+  const ANNOTATION = Object.freeze({
+    TARGET_QUANTILE: 0.25, EXTREME_SMALL_RATIO: 0.80, EXTREME_SMALL_DELTA_PT: 1.2, MIN_FILTERED_COUNT: 2,
+    APPLY_TOLERANCE_PT: 0.06, MAX_SHRINK_PT: 0.9,
+    caption: { BODY_CAP_RATIO: 0.88, TARGET_BONUS_PT: 0.0, MAX_GROW_PT: 0.0 },
+    footnote: { BODY_CAP_RATIO: 0.82, TARGET_BONUS_PT: 0.04, MAX_GROW_PT: 0.08 }
+  });
+
+  // _without_extreme_small_fonts with the annotation thresholds.
+  function annotationFonts(fonts) {
+    let sorted = fonts.filter(font => font > 0).sort((a, b) => a - b);
+    if (sorted.length >= ANNOTATION.MIN_FILTERED_COUNT + 1) {
+      const middle = sorted.length >> 1;
+      const median = sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
+      const floor = Math.max(median * ANNOTATION.EXTREME_SMALL_RATIO, median - ANNOTATION.EXTREME_SMALL_DELTA_PT);
+      const filtered = sorted.filter(font => font >= floor);
+      if (filtered.length >= ANNOTATION.MIN_FILTERED_COUNT) sorted = filtered;
+    }
+    return sorted;
+  }
+
+  // unify_annotation_fonts for one role: the role's target size (25th
+  // percentile, plus the role bonus but not above the median, capped at
+  // bodyFontCap x the role ratio), then each font moved toward it: shrink by
+  // at most MAX_SHRINK_PT, grow by at most the role's MAX_GROW_PT.
+  function annotationTarget(fonts, role, bodyFontCap) {
+    const sorted = annotationFonts(fonts);
+    if (!sorted.length) return 0;
+    const low = Math.round(sorted[Math.floor((sorted.length - 1) * ANNOTATION.TARGET_QUANTILE)] * 100) / 100;
+    const middle = sorted[sorted.length >> 1];
+    let target = Math.round(Math.min(middle, low + ANNOTATION[role].TARGET_BONUS_PT) * 100) / 100;
+    if (bodyFontCap > 0) target = Math.min(target, bodyFontCap * ANNOTATION[role].BODY_CAP_RATIO);
+    return target;
+  }
+
+  function annotationUnifiedFont(currentFont, targetFont, role) {
+    if (Math.abs(currentFont - targetFont) <= ANNOTATION.APPLY_TOLERANCE_PT) return currentFont;
+    if (currentFont > targetFont) return Math.round(Math.max(targetFont, currentFont - ANNOTATION.MAX_SHRINK_PT) * 100) / 100;
+    return Math.round(Math.min(targetFont, currentFont + ANNOTATION[role].MAX_GROW_PT) * 100) / 100;
+  }
+
+  // _clamp_annotation_payload_font: never above bodyFontCap x the role ratio.
+  function annotationCappedFont(font, role, bodyFontCap) {
+    return bodyFontCap > 0 ? Math.min(font, Math.round(bodyFontCap * ANNOTATION[role].BODY_CAP_RATIO * 100) / 100) : font;
+  }
+
   // body_font_unify_policy._apply_page_font_target, as a decision:
   // "target" (take the target), "keep" (stay at the current size).
   function unifyDecision({ currentFont, targetFont, densityAtTarget, directRender = true }) {
@@ -473,6 +520,7 @@
     densitySlackRatio, sourceLineRichWeight, fontForRecoveryDensity, underfillTargetFont,
     underfillDensityLimit, recoveryDensityTarget, recoveryLeadingCap,
     formulaInsets, pageBaselineFontSize, geometryBodyFontSize, geometryLocalFontSize,
+    ANNOTATION, annotationTarget, annotationUnifiedFont, annotationCappedFont,
     FIT, demandUnits, capacityUnits, layoutDensityRatio, translationDensityRatio, denseSmallBox, heavyDenseSmallBox, fitTranslatedBlockMetrics
   };
 });

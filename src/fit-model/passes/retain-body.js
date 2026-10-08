@@ -410,7 +410,37 @@
       }
     }
 
+    // annotation_font_policy: captions and footnotes share a per-role size
+    // (unify_annotation_fonts) and never exceed the body median x 0.88 /
+    // 0.82 (the clamp of recover_underfilled_annotation_density; its
+    // underfill growth is not ported). Runs on the scheduled sizes once the
+    // body has settled, before the non-body safety net.
+    function annotationRole(node) {
+      const type = String(node.type || node.blockKind || "").toLowerCase();
+      if (/footnote/.test(type)) return "footnote";
+      if (/caption/.test(type)) return "caption";
+      return "";
+    }
+
+    function unifyAnnotations() {
+      const bodyFonts = run.scopedNodes(isBodyNode).map(node => layoutControlFontSize(node)).sort((a, b) => a - b);
+      const bodyFontCap = bodyFonts.length ? bodyFonts[(bodyFonts.length - 1) >> 1] : 0;
+      for (const role of ["caption", "footnote"]) {
+        const nodes = [...nonBodyDecisions.keys()].filter(node => annotationRole(node) === role);
+        if (nodes.length >= 2) {
+          const target = T.annotationTarget(nodes.map(node => layoutControlFontSize(node)), role, bodyFontCap);
+          for (const node of nodes) setStyle(node, T.annotationUnifiedFont(layoutControlFontSize(node), target, role), effectiveLineRatio(node));
+        }
+        for (const node of nodes) setStyle(node, T.annotationCappedFont(layoutControlFontSize(node), role, bodyFontCap), effectiveLineRatio(node));
+        for (const node of nodes) {
+          const decided = nonBodyDecisions.get(node);
+          nonBodyDecisions.set(node, { ...decided, font: layoutControlFontSize(node) });
+        }
+      }
+    }
+
     function repairNonBody() {
+      unifyAnnotations();
       for (const node of nonBodyDecisions.keys()) delete node.retainUnsettled;
       for (const [node, decided] of nonBodyDecisions) {
         repairToPass(node, decided.font, ratioFor(decided.leadingEm), decided.leadingEm, R.NON_BODY_LEADING_MIN);

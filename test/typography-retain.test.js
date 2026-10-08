@@ -217,3 +217,17 @@ test("retain: non-body text is scheduled before and repaired after the body; not
     assert.equal(violations.outside.length, 0);
   }
 });
+
+test("retain: annotation_font_policy target, unify step and body cap", () => {
+  const T = require("../src/fit-model/typography-retain.js");
+  // Body median 10.6: captions are capped at 0.88x, footnotes at 0.82x.
+  assert.equal(T.annotationCappedFont(13.72, "footnote", 10.6), 8.69);
+  assert.equal(T.annotationCappedFont(8, "caption", 10.6), 8);
+  // Target: 25th percentile (+ role bonus, not above the median), then capped.
+  assert.equal(T.annotationTarget([9, 9.2, 9.4, 12], "caption", 10.6), 9);
+  assert.ok(Math.abs(T.annotationTarget([9.8, 10, 10.2], "caption", 10) - 8.8) < 1e-9);
+  // A larger font shrinks by at most 0.9pt per unify; captions never grow.
+  assert.equal(T.annotationUnifiedFont(11, 9, "caption"), 10.1);
+  assert.equal(T.annotationUnifiedFont(8.5, 9, "caption"), 8.5);
+  assert.equal(T.annotationUnifiedFont(8.5, 9, "footnote"), 8.58);
+});
