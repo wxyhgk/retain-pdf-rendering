@@ -372,7 +372,13 @@
         if (!Number.isFinite(inkBottom)) return moved;
         const floor = inkBottom - below.top + INK_CLEARANCE;
         const previous = lower.retainInkFloor;
-        const pushBy = floor - Math.max(0, previous ?? 0);
+        // The cap applies to how far the first line actually moves: measure
+        // from where its ink sits without any floor (CJK ink rises a little
+        // above the box top, so counting from the box top would under-count).
+        if (previous !== undefined) delete lower.retainInkFloor;
+        const naturalOffset = Math.min(...geometry.textRectsInPage(lower).map(rect => rect.top)) - below.top;
+        if (previous !== undefined) lower.retainInkFloor = previous;
+        const pushBy = floor - naturalOffset;
         if (floor > (below.bottom - below.top) * 0.4 || pushBy > layoutControlFontSize(lower) * NUDGE_MAX_EM ||
             floor <= (previous ?? -Infinity) + 1e-6) return moved;
         lower.retainInkFloor = floor;
@@ -382,9 +388,22 @@
           return moved;
         }
         moved = true;
-        if (traceFn) trace(node, "push-lower", { lower: lower.id, floor });
+        if (traceFn) trace(node, "push-lower", { lower: lower.id, floor, pushBy, moved: measuredNudge(lower, "retainInkFloor"), cap: layoutControlFontSize(lower) * NUDGE_MAX_EM });
       }
       return moved;
+    }
+
+    // Diagnostics only: how far `field` (retainInkFloor / retainLift) moved the
+    // node's first-line ink, measured from the geometry with and without it
+    // (independent of the cap arithmetic above; positive = moved down).
+    function measuredNudge(node, field) {
+      const firstInkTop = () => Math.min(...geometry.textRectsInPage(node).map(rect => rect.top));
+      const value = node[field];
+      const after = firstInkTop();
+      delete node[field];
+      const natural = firstInkTop();
+      if (value !== undefined) node[field] = value;
+      return after - natural;
     }
 
     // Safety net: when this node's ink reaches the node below and there is
@@ -424,7 +443,7 @@
       }
       node.retainLift = Math.round(high * 1000) / 1000;
       if (!passes(node)) node.retainLift = maxLift;
-      if (traceFn) trace(node, "lift", { lift: node.retainLift, maxLift });
+      if (traceFn) trace(node, "lift", { lift: node.retainLift, maxLift, moved: -measuredNudge(node, "retainLift"), cap: layoutControlFontSize(node) * NUDGE_MAX_EM });
       return true;
     }
 

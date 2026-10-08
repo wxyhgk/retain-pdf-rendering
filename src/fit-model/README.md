@@ -268,10 +268,21 @@ formula discount / box height`) with the real line count instead of its
 character-unit estimate, so its thresholds (0.60, 0.80, 0.98, 1.08, 1.18)
 keep their calibration.
 
+Dense blocks use retain-pdf's own `is_dense_small_box` /
+`is_heavy_dense_small_box` (block_seed_body_policy: translation density ratio,
+layout density and page box area), ported as `denseSmallBox` /
+`heavyDenseSmallBox` in typography-retain.js and applied by the block-fit
+schedule in passes/retain-body.js.
+
+First-line nudges (push the paragraph below down, or lift this one into free
+space above, before shrinking) move a first line by at most 0.5 em of that
+paragraph's size, measured from where its ink sits without the nudge; the
+`retainTrace` events `push-lower` / `lift` report the geometry-measured
+movement (`moved`), which test/retain-nudge.test.js checks against the cap.
+
 Not ported: low-height body inheritance, `relax_short_body_context_heights`,
 `restore_comfort_body_leading`, `refit_body_leading_after_font_unify`,
 `annotate_tall_body_density_heights`,
-the dense-small-box classification (dense = estimated density ≥ 1.08 here),
 compactness / formula-ratio inputs of the leading blend (0 unless a host
 supplies them), typography memory.
 
