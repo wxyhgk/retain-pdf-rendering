@@ -152,12 +152,16 @@ function buildModel(job, options = {}) {
   const bodyStreams = [];
   const maxPages = Number.isFinite(options.maxPages) ? options.maxPages : Infinity;
   const retain = options.typography === "retain";
+  // seed "calibrated": text-layer sizes scaled by the document's median ratio
+  // of retain-pdf's geometry estimate to the text-layer size (body blocks).
+  const calibrationPairs = [];
   const Retain = retain ? require("../../src/fit-model/typography-retain.js") : null;
   for (const page of job.document.pages.slice(0, maxPages)) {
     const pageIndex = Number(page.page_index);
     const pageSpans = options.seed === "geometry" ? [] : sourceSizes[String(pageIndex)];
+    const calibrated = options.seed === "calibrated";
     let pageGeometry = null;
-    if (retain && options.seed === "geometry") {
+    if (retain && (options.seed === "geometry" || calibrated)) {
       const itemOf = block => job.translations.get(`${pageIndex}:${blockNumber(String(block.block_id))}`);
       const textBlocks = (page.blocks || []).filter(block => block.type === "text" && !/caption|footnote/.test(String(block.sub_type || "")));
       const widthMed = median(textBlocks.map(block => block.bbox[2] - block.bbox[0]), 0);
@@ -169,6 +173,15 @@ function buildModel(job, options = {}) {
       pageGeometry = { pagePitch, pageFont: Retain.pageBaselineFontSize(candidates.map(entry => entry.glyphHeight), candidates.map(entry => entry.pitch)) };
     }
     const profilePage = job.profile.pages?.[String(pageIndex)] || {};
+    // font_roles.is_body_text_candidate (retainBodyClassify): narrow or short
+    // body blocks are not body paragraphs in retain-pdf.
+    const pageTextWidthMed = median((page.blocks || []).filter(block => block.type === "text" && !/caption|footnote/.test(String(block.sub_type || ""))).map(block => block.bbox[2] - block.bbox[0]), 0);
+    const retainIsBody = (block, sourceText, lineCount) => {
+      const textLen = String(sourceText || "").replace(/\s+/g, "").length;
+      const width = block.bbox[2] - block.bbox[0];
+      if (pageTextWidthMed > 0 && width < pageTextWidthMed * 0.75 && !(textLen >= 36 && lineCount >= 2)) return false;
+      return textLen >= 40;
+    };
     const streams = [];
     const absoluteBlocks = [];
     const blocks = [];
@@ -190,7 +203,9 @@ function buildModel(job, options = {}) {
         const size = subType === "body"
           ? Retain.geometryBodyFontSize({ ...local, pagePitch: pageGeometry.pagePitch, pageFont: pageGeometry.pageFont })
           : Retain.geometryLocalFontSize({ ...local, role });
-        if (size > 0) seed = { size, from: "geometry" };
+        // seed "calibrated": keep the text-layer size, collect body ratios.
+        if (calibrated) { if (size > 0 && seed.from === "pdf" && subType === "body") calibrationPairs.push(size / seed.size); }
+        else if (size > 0) seed = { size, from: "geometry" };
       }
       const pitchFromPdf = retain ? sourceLinePitch(bbox, pageSpans) : 0;
       const pitchFromOcr = retain && !(pitchFromPdf > 0) ? ocrLineGeometry(block, item).pitch : 0;
@@ -211,7 +226,7 @@ function buildModel(job, options = {}) {
       else if (seed.from === "geometry") stats.seedsFromGeometry = (stats.seedsFromGeometry || 0) + 1;
       else stats.seedsFromOcr += 1;
       const sourceText = String(item.source_text || block.text || "");
-      if (subType === "body") {
+      if (subType === "body" && !(retain && options.retainBodyClassify && !retainIsBody(block, sourceText, lineCount))) {
         // Source body text: the line pitch is ~1.2 x the font size.
         const stream = {
           pageIndex,
@@ -306,6 +321,14 @@ function buildModel(job, options = {}) {
       }
     });
     stats.bodyStandaloneMedian = Number(typical.toFixed(2));
+  }
+  if (calibrationPairs.length) {
+    const k = median(calibrationPairs, 1);
+    stats.seedCalibration = Math.round(k * 1000) / 1000;
+    for (const page of pages) {
+      for (const stream of page.restoration.streams) stream.fontSize = Math.round(stream.fontSize * k * 100) / 100;
+      for (const block of page.restoration.absoluteBlocks) if (block.kind === "text" && block.fontSize) block.fontSize = Math.round(block.fontSize * k * 100) / 100;
+    }
   }
   return { model, paint, stats, vectors };
 }

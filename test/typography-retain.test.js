@@ -177,3 +177,43 @@ test("retain: headings are sized on their own boxes, bold, and the main title is
   const bodies = fitted.pages.flatMap(page => page.nodes).filter(node => node.kind === "stream");
   assert.ok(bodies.every(node => node.fontWeight === undefined), "body text stays regular");
 });
+
+test("retain: fit_translated_block_metrics port (capacity units, aggressive gate)", () => {
+  const T = require("../src/fit-model/typography-retain.js");
+  // capacity.box_capacity_units: a one-line box always holds one line.
+  const one = T.capacityUnits({ width: 300, height: 8, fontSize: 8.4, leadingEm: 0.56, visualLines: 1 });
+  assert.ok(one > 0 && Math.abs(one - Math.max(4, 300 / (8.4 * 0.92)) * 0.98) < 1e-9);
+  // A comfortable block keeps its size.
+  const fits = T.fitTranslatedBlockMetrics({ isBody: true, fontSize: 10, leadingEm: 0.56, pageBodyFont: 10, width: 300, height: 200,
+    visualLines: 10, sourceText: "word ".repeat(40), translatedText: "研究".repeat(40), denseSmall: false, heavyDenseSmall: false });
+  assert.equal(fits.why, "fits");
+  assert.equal(fits.font, 10);
+  // About 1.12x capacity, not aggressive: at most two 0.12pt steps, never the emergency floor.
+  const tight = T.fitTranslatedBlockMetrics({ isBody: true, fontSize: 10, leadingEm: 0.56, pageBodyFont: 10, width: 200, height: 44,
+    visualLines: 3, sourceText: "word ".repeat(40), translatedText: "研究".repeat(24), denseSmall: false, heavyDenseSmall: false });
+  assert.ok(!/^emergency/.test(tight.why), tight.why);
+  assert.ok(tight.font >= 10 - 2 * 0.12 - 1e-9);
+  // Non-body branch steps 0.12pt at a time and stops at its minimum.
+  const nonBody = T.fitTranslatedBlockMetrics({ isBody: false, fontSize: 9, leadingEm: 0.26, pageBodyFont: 0, width: 120, height: 20,
+    visualLines: 1, sourceText: "a b c", translatedText: "注释".repeat(60), denseSmall: false, heavyDenseSmall: false });
+  assert.ok(nonBody.font >= 8.45 - 1e-9 && nonBody.font <= 9);
+});
+
+test("retain: non-body text is scheduled before and repaired after the body; nothing collapses to the floor", () => {
+  const FitModel = require("../src/fit-model.js");
+  const Text = require("../src/text/measurer");
+  const { defaultFontTable } = require("../src/index.js");
+  const { outputViolations } = require("./helpers/output-path");
+  const P = require("./helpers/fit-model-parity");
+  for (const name of ["two-column-article", "single-column-report"]) {
+    const fixture = P.fixtures().find(item => item.name === name);
+    const fitter = FitModel.createModelFitter({ measurer: Text.createMeasurer({ metrics: defaultFontTable() }), typography: "retain" });
+    const fitted = fitter.fitDocument(JSON.parse(JSON.stringify(fixture.expected)), { mode: "translation" });
+    const nodes = fitted.pages.flatMap(page => page.nodes);
+    assert.ok(nodes.some(node => node.fit?.pass === "retain-non-body"), `${name}: non-body text uses the retain non-body path`);
+    assert.ok(nodes.every(node => !node.textRects.length || node.fontSize > 4.8), `${name}: no text at the 4.8pt floor`);
+    const violations = outputViolations(fitted);
+    assert.equal(violations.lineOverlaps.length, 0, `${name}: ${JSON.stringify(violations.lineOverlaps.slice(0, 2))}`);
+    assert.equal(violations.outside.length, 0);
+  }
+});

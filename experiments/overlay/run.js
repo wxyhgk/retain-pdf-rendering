@@ -27,7 +27,7 @@ const PYTHON = process.env.RPR_PYTHON || path.resolve(__dirname, "../../../retai
 // `--preset retain`: the full retain-pdf-style configuration in one flag.
 // Flags given after it override individual settings.
 const PRESETS = {
-  retain: { typography: "retain", seed: "geometry", vectorObstacles: true, boldTitles: true }
+  retain: { typography: "retain", seed: "geometry", vectorObstacles: true, boldTitles: true, faithful: true }
 };
 
 function parseArgs(argv) {
@@ -58,6 +58,10 @@ function parseArgs(argv) {
     else if (value === "--bold-titles") options.boldTitles = true;
     else if (value === "--no-bold-titles") options.boldTitles = false;
     else if (value === "--no-retain-titles") options.retainTitles = false;
+    else if (value === "--faithful") options.faithful = true;
+    else if (value === "--no-faithful") options.faithful = false;
+    else if (value === "--leading-first") options.leadingFirst = true;
+    else if (value === "--no-leading-first") options.leadingFirst = false;
     else if (!options.job) options.job = value;
   }
   if (!options.job) throw new Error("usage: run.js <jobDir> [--out DIR] [--pages N] [--png 1,3] [--no-drift-check]");
@@ -173,6 +177,8 @@ print(json.dumps(out))
     vectorObstacles: Boolean(options.vectorObstacles),
     maxPages: options.pages,
     typography: options.typography,
+    // retain-pdf's is_body_text_candidate (on with --preset retain / --faithful).
+    retainBodyClassify: Boolean(options.faithful),
     seed: options.seed,
     sourceSizes,
     inheritBelow: options.inheritBelow,
@@ -218,7 +224,14 @@ print(json.dumps(out))
   // strictSourceFit: text must stay inside its own source box. The overlay
   // cannot see vector rules or frames that are not OCR blocks, so growing
   // into "free" space below a box is not safe here.
-  const fitOptions = { mode: "translation", bodyMaxFont, strictSourceFit: options.strictSourceFit, bodyNodeFontCaps: Boolean(options.fontCaps), ...(options.retainBandFit ? { retainBandFit: true } : {}), ...(options.retainTitles === false ? { retainTitles: false } : {}) };
+  // Profile "retain" defaults (engine): retain-pdf's own block fit
+  // (retainFaithfulSchedule) and leading-before-font repair
+  // (retainLeadingFirstRepair); --no-faithful / --no-leading-first turn them off.
+  const fitOptions = { mode: "translation", bodyMaxFont, strictSourceFit: options.strictSourceFit, bodyNodeFontCaps: Boolean(options.fontCaps), ...(options.retainBandFit ? { retainBandFit: true } : {}), ...(options.retainTitles === false ? { retainTitles: false } : {}), ...(options.faithful === false ? { retainFaithfulSchedule: false } : {}), ...(options.leadingFirst === false ? { retainLeadingFirstRepair: false } : {}) };
+  // RPR_RETAIN_TRACE=file: per body paragraph decision trace of the retain profile.
+  const retainTraceRows = [];
+  if (process.env.RPR_RETAIN_TRACE) fitOptions.retainTrace = (id, stage, data) => retainTraceRows.push({ id, stage, ...data });
+  process.on("exit", () => { if (process.env.RPR_RETAIN_TRACE) fs.writeFileSync(process.env.RPR_RETAIN_TRACE, JSON.stringify(retainTraceRows)); });
   let fitted = fitter.fitDocument(model, fitOptions);
   const limiterRounds = [];
   for (let round = 0; round < (retain ? 0 : options.limiterRounds); round++) {

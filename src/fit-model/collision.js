@@ -130,10 +130,16 @@
         return strictBarrier(element, box);
       },
       // No column exemption: an ink-on-ink hit is a real overlap wherever it is.
+      // A node whose size is scheduled but not settled yet (retainUnsettled,
+      // passes/retain-body.js) blocks only with the ink inside its own box: its
+      // spill is resolved when it is settled itself.
       findHit(rect, { barriers }) {
         return barriers.find((barrier) => {
-          if (!barrier.allInkBounds || !rectsOverlap(rect, barrier.allInkBounds, 0)) return false;
-          return barrier.allInk.some((other) => rectsOverlap(rect, other, 0));
+          const unsettled = Boolean(barrier.element.retainUnsettled);
+          const bounds = unsettled ? barrier.inkBounds : barrier.allInkBounds;
+          const rects = unsettled ? barrier.ink : barrier.allInk;
+          if (!bounds || !rectsOverlap(rect, bounds, 0)) return false;
+          return rects.some((other) => rectsOverlap(rect, other, 0));
         });
       },
       // Text may run past its box into free space, not into another

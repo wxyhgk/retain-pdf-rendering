@@ -90,7 +90,12 @@
     }
     const bodyMaxFont = Number(fitOptions.bodyMaxFont);
     if (retainBody) {
+      // Non-body sizes are scheduled first (body paragraphs are then tested
+      // against them, not against seed sizes); their safety net runs once the
+      // body has settled.
+      retainBody.scheduleNonBody();
       retainBody.fitBody();
+      retainBody.repairNonBody();
       // Headings were sized from their boxes; now that the body has settled,
       // back them off where their ink still touches something.
       if (retainTitles) retainTitles.backoffTitles(Select.anyTitle);
@@ -143,6 +148,9 @@
     });
     syncInheritedBodyFontToBodyGroup();
     }
+    // The DOM rules for lists, multi-line text, captions and references. The
+    // "retain" profile sized all of them in retainBody (schedule/repairNonBody).
+    if (!retainBody) {
     const genericTextOptions = {
       step: 0.35,
       minFont: collisionFirstTextFit ? 4.8 : undefined,
@@ -187,6 +195,7 @@
       allowOverflow: false,
       avoidBlockOverlap: true
     }));
+    }
     if (fitOptions.translatedClamp) clampTranslatedOverflow();
     clampTranslatedCodeOverflow();
     enforceFinalTextCollisionSafety();
