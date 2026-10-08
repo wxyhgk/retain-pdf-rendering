@@ -34,6 +34,7 @@ function parseArgs(argv) {
     else if (argv[i] === "--out") options.out = path.resolve(argv[++i]);
     else if (argv[i] === "--verbose") options.verbose = true;
     else if (argv[i] === "--table") options.table = path.resolve(argv[++i]);
+    else if (argv[i] === "--weight") options.weight = argv[++i];
     else if (argv[i] === "--only") options.only = argv[++i];
     else if (argv[i] === "--export") options.export = path.resolve(argv[++i]);
     else if (argv[i] === "--extra") options.extra = path.resolve(argv[++i]);
@@ -161,9 +162,9 @@ function ourLines(probe, measurer, maths) {
   }).filter(Boolean);
 }
 
-function typstDocument(probes, maths) {
+function typstDocument(probes, maths, weight = "regular") {
   const lines = [
-    `#set text(font: "${FONT_FAMILY}", top-edge: "ascender", bottom-edge: "descender", lang: "zh")`,
+    `#set text(font: "${FONT_FAMILY}", weight: "${weight}", top-edge: "ascender", bottom-edge: "descender", lang: "zh")`,
     PREAMBLE
   ];
   for (const probe of probes) {
@@ -226,7 +227,7 @@ function main() {
       for (const line of result.lines) console.log(`  [${line.start},${line.end}) ${line.width.toFixed(2)} ${JSON.stringify(prepared.text.slice(line.start, line.end))}`);
     }
   }
-  fs.writeFileSync(path.join(options.out, "probes.typ"), typstDocument(probes, maths));
+  fs.writeFileSync(path.join(options.out, "probes.typ"), typstDocument(probes, maths, options.weight));
   typst.compile("probes.typ", "probes.pdf", options.out);
   const typstPages = extractLines(path.join(options.out, "probes.pdf"));
   if (typstPages.length !== probes.length) throw new Error(`expected ${probes.length} pages, got ${typstPages.length}`);

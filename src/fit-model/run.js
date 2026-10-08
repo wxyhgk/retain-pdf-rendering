@@ -72,6 +72,11 @@
     // document-wide font/line-height pair, limited by the first heading that
     // reaches another block.  Group peers remain barriers so adjacent
     // section/subsection headings cannot overlap each other.
+    // Profile "retain": every heading is sized on its own like retain-pdf's
+    // solve_title_fit (passes/retain-titles.js) instead of sharing one size.
+    const retainTitles = steps.retainTitles;
+    if (retainTitles) retainTitles.fitTitles(Select.anyTitle);
+    else {
     tuneEach(Select.mainTitle, { ...titleFitOptions, label: "main-title" });
     tuneGroup(Select.otherTitle, { ...titleFitOptions, includeGroupPeers: true });
     expandUnderfilledTitles(Select.otherTitle, {
@@ -82,8 +87,14 @@
     });
     clusterTitleFontSizes(Select.anyTitle, 1.0);
     keepShortTitlesOnOneLine(Select.otherTitle, { maxCharacters: 12, maxBorrowPx: 18, maxWidthRatio: 1.35 });
+    }
     const bodyMaxFont = Number(fitOptions.bodyMaxFont);
-    if (retainBody) retainBody.fitBody();
+    if (retainBody) {
+      retainBody.fitBody();
+      // Headings were sized from their boxes; now that the body has settled,
+      // back them off where their ink still touches something.
+      if (retainTitles) retainTitles.backoffTitles(Select.anyTitle);
+    }
     else {
     if (fitOptions.bodyNodeFontCaps) {
       capBodyNodes(scopedNodes(Select.body), {

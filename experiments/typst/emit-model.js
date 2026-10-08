@@ -75,7 +75,10 @@ function emitLine(node, line, flat, maths) {
     // nothing above the baseline; only formula SVG boxes do.
     if (box && maths.get(box.tex, false).ok) boxAscent = Math.max(boxAscent, (Number(box.heightEm) - Number(box.depthEm)) * size);
   }
-  return `#place(top + left, dx: ${fmt(line.x)}pt, dy: ${fmt(line.baseline - boxAscent)}pt, { set text(size: ${fmt(size)}pt, top-edge: "baseline", bottom-edge: "baseline"); ${content} })`;
+  // node.fontWeight is set by hosts that paint headings bold (and measured
+  // them with the bold advance table); absent, the face's regular weight.
+  const weight = node.fontWeight && node.fontWeight !== "regular" ? `, weight: "${node.fontWeight}"` : "";
+  return `#place(top + left, dx: ${fmt(line.x)}pt, dy: ${fmt(line.baseline - boxAscent)}pt, { set text(size: ${fmt(size)}pt${weight}, top-edge: "baseline", bottom-edge: "baseline"); ${content} })`;
 }
 
 function emitTextNode(node, maths) {

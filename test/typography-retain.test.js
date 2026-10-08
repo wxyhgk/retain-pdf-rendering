@@ -120,3 +120,60 @@ test("retain profile off: the default fitter ignores retain-only node fields", (
   assert.ok(Number.isFinite(node.fontSize));
   assert.equal(node.lines[0].fitTop, undefined, "default line model reports no fit band");
 });
+
+test("retain: geometryLocalFontSize follows local_font_size_pt for non-body blocks", () => {
+  const Retain = require("../src/fit-model/typography-retain.js");
+  // glyph height 12 -> metric 11.76 -> x0.9215 = 10.84 (clamped 8.4..14.2)
+  assert.equal(Retain.geometryLocalFontSize({ glyphHeight: 12, pitch: 0 }), 10.84);
+  // captions: x0.86, capped at 10
+  assert.equal(Retain.geometryLocalFontSize({ glyphHeight: 12, pitch: 0, role: "caption" }), 9.32);
+  assert.equal(Retain.geometryLocalFontSize({ glyphHeight: 30, pitch: 0, role: "caption" }), 10);
+  // headings are not pulled toward the page body size and stop at 14.2
+  assert.equal(Retain.geometryLocalFontSize({ glyphHeight: 40, pitch: 0 }), 14.2);
+  assert.equal(Retain.geometryLocalFontSize({ glyphHeight: 0, pitch: 0 }), 0);
+});
+
+test("fit-model: measurers.bold measures title nodes (and nothing else)", () => {
+  const FitModel = require("../src/fit-model.js");
+  const Text = require("../src/text/measurer");
+  const { defaultFontTable } = require("../src/index.js");
+  const fs = require("node:fs");
+  const path = require("node:path");
+  const regular = Text.createMeasurer({ metrics: defaultFontTable() });
+  const boldTable = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "data", "fonts", "source-han-serif-sc-bold.json"), "utf8"));
+  const bold = Text.createMeasurer({ metrics: boldTable });
+  const used = { regular: 0, bold: 0 };
+  const counting = (measurer, key) => ({ ...measurer, layout(prepared, options) { used[key] += 1; return measurer.layout(prepared, options); } });
+  const P = require("./helpers/fit-model-parity");
+  const fixture = P.fixtures().find(item => item.name === "two-column-article");
+  const fitter = FitModel.createModelFitter({ measurer: counting(regular, "regular"), measurers: { bold: counting(bold, "bold") }, lineModel: "measurer" });
+  const fitted = fitter.fitDocument(JSON.parse(JSON.stringify(fixture.expected)), { mode: "translation" });
+  const titles = fitted.pages.flatMap(page => page.nodes).filter(node => node.kind === "block" && node.type === "title");
+  assert.ok(titles.length > 0, "fixture has titles");
+  assert.ok(used.bold > 0, "bold measurer used for titles");
+  assert.ok(used.regular > 0, "regular measurer still used for the rest");
+  // Bold Latin and CJK run wider than regular in Source Han Serif.
+  const width = measurer => measurer.layout(measurer.prepare([{ type: "text", text: "Results 研究人群特征" }]), { fontSize: 10, width: 1e6 }).maxLineWidth;
+  assert.ok(width(bold) > width(regular));
+});
+
+test("retain: headings are sized on their own boxes, bold, and the main title is left-aligned", () => {
+  const FitModel = require("../src/fit-model.js");
+  const Text = require("../src/text/measurer");
+  const { defaultFontTable } = require("../src/index.js");
+  const P = require("./helpers/fit-model-parity");
+  const fixture = P.fixtures().find(item => item.name === "two-column-article");
+  const fitter = FitModel.createModelFitter({
+    measurer: Text.createMeasurer({ metrics: defaultFontTable() }),
+    measurers: { bold: Text.createMeasurer({ metrics: defaultFontTable("bold") }) },
+    typography: "retain"
+  });
+  const fitted = fitter.fitDocument(JSON.parse(JSON.stringify(fixture.expected)), { mode: "translation" });
+  const titles = fitted.pages.flatMap(page => page.nodes).filter(node => node.kind === "block" && node.type === "title");
+  assert.ok(titles.length > 0);
+  assert.ok(titles.every(node => node.fontWeight === "bold"), "titles are painted bold when measured bold");
+  assert.ok(titles.every(node => /^retain-(title|heading)$/.test(node.fit?.pass || "")), "retain title pass sized every heading");
+  assert.equal(titles.filter(node => node.align === "center").length, 0, "no centred main title in the retain profile");
+  const bodies = fitted.pages.flatMap(page => page.nodes).filter(node => node.kind === "stream");
+  assert.ok(bodies.every(node => node.fontWeight === undefined), "body text stays regular");
+});

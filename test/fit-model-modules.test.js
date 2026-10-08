@@ -32,6 +32,7 @@ const LOAD_ORDER = [
   "passes/final-audit.js",
   "passes/formulas.js",
   "passes/retain-body.js",
+  "passes/retain-titles.js",
   "passes/justify.js",
   "run.js",
   "serialize.js",

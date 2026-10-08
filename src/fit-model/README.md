@@ -28,6 +28,8 @@ DOM fitter; this directory holds the implementation.
 | `passes/final-audit.js` | 134 | The final glyph-level collision audit. |
 | `passes/formulas.js` | 178 | Formula shrink/expand and equation-number alignment. |
 | `passes/retain-body.js` | 569 | Profile "retain": retain-pdf's body pipeline (seed blend, leading, block fit, book-target unify, underfill grow / harmonize / recover) with the ink safety net. |
+| `passes/retain-titles.js` | 102 | Profile "retain": every heading sized on its own box like retain-pdf's solve_title_fit (fill cap, 0.94 × box band, title/heading leading), backed off to 0.72 / 0.78 × after the body settles. On by default (`fitOptions.retainTitles: false` keeps the DOM title rules). |
+| `passes/justify.js` | 82 | Post-fit balanced breaking of justified text, kept only if line count, vertical extents and collision state are unchanged (`config.balanceLines`, default on in "retain"). |
 | `run.js` | 190 | The pass order with its option sets — the recipe. |
 | `serialize.js` | 92 | The result as plain data. |
 | `index.js` | 109 | `createModelFitter`: builds `ctx`, wires the parts. |
@@ -56,9 +58,11 @@ passes/clamps          ← document
 passes/final-audit     ← constants, document
 passes/formulas        ← rects, document
 passes/retain-body     ← document, typography-retain
+passes/retain-titles   ← document              (+ retain-body helpers at run time)
+passes/justify         ← constants
 run                    ← document
 serialize              ← document
-index                  ← constants, content, rects, document, line-models/index, geometry, collision, tuning, passes/titles, passes/clamps, passes/final-audit, passes/formulas, passes/retain-body, run, serialize
+index                  ← constants, content, rects, document, line-models/index, geometry, collision, tuning, passes/titles, passes/clamps, passes/final-audit, passes/formulas, passes/retain-body, passes/retain-titles, passes/justify, run, serialize
 ```
 
 Object-level (who receives what at runtime):
@@ -142,6 +146,8 @@ fit-model/passes/clamps.js
 fit-model/passes/final-audit.js
 fit-model/passes/formulas.js
 fit-model/passes/retain-body.js
+fit-model/passes/retain-titles.js
+fit-model/passes/justify.js
 fit-model/run.js
 fit-model/serialize.js
 fit-model/index.js

@@ -562,7 +562,10 @@
       return { ...options, maxLineRatio: Math.min(options.maxLineRatio ?? Infinity, ratioFor(R.NON_BODY_LEADING_MAX)) };
     }
 
-    return { prepare, fitBody, nonBodyOptions };
+    // Shared with passes/retain-titles.js (same safety net and style rules).
+    const helpers = Object.freeze({ ratioFor, setStyle, largestPassing, passes, COLLIDE, FONT_STEP });
+
+    return { prepare, fitBody, nonBodyOptions, helpers };
   }
 
   return { createRetainBodyPass };

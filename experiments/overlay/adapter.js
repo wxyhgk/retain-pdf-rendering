@@ -183,7 +183,13 @@ function buildModel(job, options = {}) {
       let seed = seedFontSize(block, bbox, pageSpans, lineCount);
       if (pageGeometry && pageGeometry.pageFont > 0) {
         const local = ocrLineGeometry(block, item);
-        const size = Retain.geometryBodyFontSize({ ...local, pagePitch: pageGeometry.pagePitch, pageFont: pageGeometry.pageFont });
+        // Body candidates blend with the page estimate; titles, headings,
+        // captions and footnotes use their own glyph height (retain-pdf's
+        // estimate_font_size_pt returns local_font_size_pt for non-body).
+        const role = /footnote/.test(subType) ? "footnote" : /caption/.test(subType) ? "caption" : "text";
+        const size = subType === "body"
+          ? Retain.geometryBodyFontSize({ ...local, pagePitch: pageGeometry.pagePitch, pageFont: pageGeometry.pageFont })
+          : Retain.geometryLocalFontSize({ ...local, role });
         if (size > 0) seed = { size, from: "geometry" };
       }
       const pitchFromPdf = retain ? sourceLinePitch(bbox, pageSpans) : 0;

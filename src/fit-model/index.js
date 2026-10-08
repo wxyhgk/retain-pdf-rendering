@@ -7,7 +7,7 @@
 (function (root, factory) {
   "use strict";
   const NAME = "fitter";
-  const DEPENDENCIES = [["constants", "./constants"], ["content", "./content"], ["rects", "./rects"], ["document", "./document"], ["lineModel", "./line-models/index"], ["geometry", "./geometry"], ["collision", "./collision"], ["tuning", "./tuning"], ["titlePasses", "./passes/titles"], ["clampPasses", "./passes/clamps"], ["finalAuditPass", "./passes/final-audit"], ["formulaPasses", "./passes/formulas"], ["retainBodyPass", "./passes/retain-body"], ["justifyPasses", "./passes/justify"], ["run", "./run"], ["serialize", "./serialize"]];
+  const DEPENDENCIES = [["constants", "./constants"], ["content", "./content"], ["rects", "./rects"], ["document", "./document"], ["lineModel", "./line-models/index"], ["geometry", "./geometry"], ["collision", "./collision"], ["tuning", "./tuning"], ["titlePasses", "./passes/titles"], ["clampPasses", "./passes/clamps"], ["finalAuditPass", "./passes/final-audit"], ["formulaPasses", "./passes/formulas"], ["retainBodyPass", "./passes/retain-body"], ["retainTitlePass", "./passes/retain-titles"], ["justifyPasses", "./passes/justify"], ["run", "./run"], ["serialize", "./serialize"]];
   const isNode = typeof module === "object" && module && module.exports;
   const parts = isNode ? null : ((root.RetainPdfRendering || {}).FitModelParts || {});
   const resolved = DEPENDENCIES.map(([key, file]) => {
@@ -21,7 +21,7 @@
     const namespace = root.RetainPdfRendering = root.RetainPdfRendering || {};
     (namespace.FitModelParts = namespace.FitModelParts || {})[NAME] = api;
   }
-})(typeof this === "object" && this ? this : globalThis, function (root, constants, content, rects, document, LineModels, Geometry, Collision, Tuning, Titles, Clamps, FinalAudit, Formulas, RetainBody, Justify, Run, Serialize) {
+})(typeof this === "object" && this ? this : globalThis, function (root, constants, content, rects, document, LineModels, Geometry, Collision, Tuning, Titles, Clamps, FinalAudit, Formulas, RetainBody, RetainTitles, Justify, Run, Serialize) {
   "use strict";
   const { OBJECT, LINE_SEPARATOR, DEFAULT_CONTENT_AREAS, sourceHanSerifInk, FINAL_AUDIT_OPTIONS } = constants;
   const { defaultContentFor, normalizeDisplayTeX, collapseRuns, textToRuns, htmlToRuns } = content;
@@ -105,14 +105,19 @@
         strictSourceFit: Boolean(fitOptions.strictSourceFit)
       };
       const deps = { geometry, collision };
+      // Typography profile "retain" only: retain-pdf's body pipeline, and its
+      // per-heading sizing (fitOptions.retainTitles: false keeps the DOM rules).
+      const retainBody = ctx.typography === "retain" ? RetainBody.createRetainBodyPass(ctx, run, deps) : null;
+      const retainTitles = retainBody && fitOptions.retainTitles !== false
+        ? RetainTitles.createRetainTitlePass(ctx, run, { ...deps, retainBody }) : null;
       Run.runFit(run, {
         tuning: Tuning.createTuning(ctx, run, deps),
         titles: Titles.createTitlePasses(ctx, run, deps),
         clamps: Clamps.createClampPasses(ctx, run, deps),
         finalAudit: FinalAudit.createFinalAuditPass(ctx, run, deps),
         formulas: Formulas.createFormulaPasses(ctx, run, deps),
-        // Typography profile "retain" only: retain-pdf's body pipeline.
-        retainBody: ctx.typography === "retain" ? RetainBody.createRetainBodyPass(ctx, run, deps) : null,
+        retainBody,
+        retainTitles,
         justify: ctx.balance ? Justify.createJustifyPasses(ctx, run, deps) : null
       });
     }

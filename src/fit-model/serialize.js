@@ -22,7 +22,7 @@
   }
 })(typeof this === "object" && this ? this : globalThis, function (root, document) {
   "use strict";
-  const { isStream, layoutControlFontSize, effectiveLineRatio, textAlign } = document;
+  const { isStream, layoutControlFontSize, effectiveLineRatio, textAlign, measurerForNode } = document;
 
   function createSerializer(ctx, geo) {
     const { geometry, renderedContentRectsInPage } = geo;
@@ -74,6 +74,8 @@
             if (typeof node.content.code === "string") out.code = { text: node.content.code, fit: node.codeFit || "" };
             if (node.shortTitleNoWrap) out.nowrap = true;
             if (node.userBodyFontPt) out.userBodyFontPt = node.userBodyFontPt;
+            // Measured with the host's bold measurer (measurers.bold): paint bold.
+            if (ctx.roleMeasurers.bold && measurerForNode(ctx, node) === ctx.roleMeasurers.bold) out.fontWeight = "bold";
             return out;
           })
         }))

@@ -90,15 +90,21 @@
   }
 
   // layout.css: titles 700, page headers 600 (both render bold); the other
-  // sans nodes are regular.
+  // sans nodes are regular. Hosts that paint headings in the body face's bold
+  // weight (the Typst overlay, like retain-pdf's resolve_font_weight) pass
+  // measurers.bold, which then measures titles instead of sansBold.
   function measurerForNode(ctx, node) {
     if (fontRole(node) !== "sans") return ctx.measurer;
     const type = String(node.type || "").toLowerCase();
+    if (type === "title" && ctx.roleMeasurers.bold) return ctx.roleMeasurers.bold;
     const bold = type === "title" || type === "header" || type === "page_header";
     return (bold ? ctx.roleMeasurers.sansBold : ctx.roleMeasurers.sans) || ctx.measurer;
   }
 
   function textAlign(node) {
+    // Fixed when the node is built (profile "retain": left-aligned main title,
+    // as retain-pdf sets it).
+    if (node.alignOverride) return node.alignOverride;
     if (isStream(node)) {
       if (node.refs || node.fromList || hasClassDebugText(node) || node.toc) return "left";
       return "justify";
@@ -231,6 +237,7 @@
         blockKind: type,
         layoutKind: String(block.kind || "text"),
         mainTitle: Boolean(block.mainTitle),
+        alignOverride: ctx.typography === "retain" && block.mainTitle ? "left" : null,
         title: type === "title",
         caption: /caption|footnote/.test(type),
         flowKind: "",

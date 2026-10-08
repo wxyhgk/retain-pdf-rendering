@@ -328,6 +328,20 @@
     return clamp(metric * C.BODY_FONT_SIZE_FACTOR, C.MIN_FONT_SIZE_PT, C.MAX_LOCAL_FONT_SIZE_PT);
   }
 
+  // font_size_fit.local_font_size_pt: the size of a non-body block (titles,
+  // headings, captions, footnotes) from its own glyph height, without the
+  // page blend estimate_font_size_pt applies to body candidates.
+  function geometryLocalFontSize({ glyphHeight, pitch, role = "text" }) {
+    const metric = glyphHeight > 0 ? glyphHeight * C.LINE_HEIGHT_TO_FONT_SCALE : pitch * C.LINE_PITCH_TO_FONT_SCALE;
+    if (!(metric > 0)) return 0;
+    const base = metric * C.BODY_FONT_SIZE_FACTOR;
+    let size;
+    if (role === "footnote") size = clamp(base * 0.78, 6.6, C.MAX_LOCAL_FONT_SIZE_PT);
+    else if (role === "caption") size = clamp(base * 0.86, C.MIN_FONT_SIZE_PT, 10.0);
+    else size = clamp(base, C.MIN_FONT_SIZE_PT, C.MAX_LOCAL_FONT_SIZE_PT);
+    return Math.round(size * 100) / 100;
+  }
+
   function geometryBodyFontSize({ glyphHeight, pitch, pagePitch, pageFont, compactness = 0 }) {
     const local = clamp((glyphHeight > 0 ? glyphHeight * C.LINE_HEIGHT_TO_FONT_SCALE : pitch * C.LINE_PITCH_TO_FONT_SCALE) * C.BODY_FONT_SIZE_FACTOR,
       C.MIN_FONT_SIZE_PT, C.MAX_LOCAL_FONT_SIZE_PT);
@@ -345,6 +359,6 @@
     lowQuantileFontTarget, unifyDecision,
     densitySlackRatio, sourceLineRichWeight, fontForRecoveryDensity, underfillTargetFont,
     underfillDensityLimit, recoveryDensityTarget, recoveryLeadingCap,
-    formulaInsets, pageBaselineFontSize, geometryBodyFontSize
+    formulaInsets, pageBaselineFontSize, geometryBodyFontSize, geometryLocalFontSize
   };
 });

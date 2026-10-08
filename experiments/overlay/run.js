@@ -27,7 +27,7 @@ const PYTHON = process.env.RPR_PYTHON || path.resolve(__dirname, "../../../retai
 // `--preset retain`: the full retain-pdf-style configuration in one flag.
 // Flags given after it override individual settings.
 const PRESETS = {
-  retain: { typography: "retain", seed: "geometry", vectorObstacles: true }
+  retain: { typography: "retain", seed: "geometry", vectorObstacles: true, boldTitles: true }
 };
 
 function parseArgs(argv) {
@@ -55,6 +55,9 @@ function parseArgs(argv) {
     else if (value === "--no-font-caps") options.fontCaps = false;
     else if (value === "--vector-obstacles") options.vectorObstacles = true;
     else if (value === "--no-vector-obstacles") options.vectorObstacles = false;
+    else if (value === "--bold-titles") options.boldTitles = true;
+    else if (value === "--no-bold-titles") options.boldTitles = false;
+    else if (value === "--no-retain-titles") options.retainTitles = false;
     else if (!options.job) options.job = value;
   }
   if (!options.job) throw new Error("usage: run.js <jobDir> [--out DIR] [--pages N] [--png 1,3] [--no-drift-check]");
@@ -198,7 +201,12 @@ print(json.dumps(out))
     return defaults(node, mode);
   };
   const retain = options.typography === "retain";
-  const fitter = FitModel.createModelFitter({ measurer, lineModel: "measurer", contentFor, ...(retain ? { typography: "retain" } : {}) });
+  // --bold-titles (in --preset retain): headings are measured with the Bold
+  // advance table, and the fitter then marks them fontWeight "bold" (like
+  // retain-pdf's resolve_font_weight).
+  const boldBase = options.boldTitles ? Text.createMeasurer({ metrics: defaultFontTable("bold") }) : null;
+  const measurers = boldBase ? { bold: { ...boldBase, layout(prepared, layoutOptions) { layouts += 1; return boldBase.layout(prepared, layoutOptions); } } } : undefined;
+  const fitter = FitModel.createModelFitter({ measurer, lineModel: "measurer", contentFor, ...(measurers ? { measurers } : {}), ...(retain ? { typography: "retain" } : {}) });
   started = performance.now();
   const mathBefore = maths.stats.ms;
   // The shared body font stops at the first paragraph that cannot grow
@@ -210,7 +218,7 @@ print(json.dumps(out))
   // strictSourceFit: text must stay inside its own source box. The overlay
   // cannot see vector rules or frames that are not OCR blocks, so growing
   // into "free" space below a box is not safe here.
-  const fitOptions = { mode: "translation", bodyMaxFont, strictSourceFit: options.strictSourceFit, bodyNodeFontCaps: Boolean(options.fontCaps), ...(options.retainBandFit ? { retainBandFit: true } : {}) };
+  const fitOptions = { mode: "translation", bodyMaxFont, strictSourceFit: options.strictSourceFit, bodyNodeFontCaps: Boolean(options.fontCaps), ...(options.retainBandFit ? { retainBandFit: true } : {}), ...(options.retainTitles === false ? { retainTitles: false } : {}) };
   let fitted = fitter.fitDocument(model, fitOptions);
   const limiterRounds = [];
   for (let round = 0; round < (retain ? 0 : options.limiterRounds); round++) {
