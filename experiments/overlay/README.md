@@ -209,3 +209,31 @@ invisible geometry (hatching clipped to a figure, chapter-opener circles
 under a white knockout). retain-pdf itself uses drawings only for source
 cleanup (cover-only on vector-heavy pages, glyphs drawn as paths), not to
 constrain layout.
+
+## `--preset retain`
+
+One flag for the full retain-pdf-style configuration:
+`--typography retain --seed geometry --vector-obstacles --bold-titles --faithful`.
+Flags after it override single settings (`--seed calibrated`,
+`--no-vector-obstacles`, `--no-bold-titles`, `--no-retain-titles`,
+`--no-faithful`, `--no-leading-first`).
+
+- Typography "retain" (src/fit-model, see its README): retain-pdf's body,
+  non-body, annotation and heading rules with the ink safety net; capped
+  justification and post-fit balanced breaking.
+- `--seed geometry` (default in the preset): retain-pdf's seed estimate from
+  OCR line geometry (`estimate_font_size_pt`, `local_font_size_pt` for
+  non-body). `--seed calibrated`: the text-layer size × the document's median
+  geometry / text-layer ratio (body blocks).
+- `--faithful`: retain-pdf's `is_body_text_candidate` (short or narrow
+  `text/body` blocks are non-body).
+- `--vector-obstacles`: vector graphics without an OCR block become
+  obstacles (vector-obstacles.js).
+- `--bold-titles`: headings measured with the Bold advance table and painted
+  bold.
+- Math: `Text.contentFromText` scans delimiters left to right; a formula
+  MathJax cannot render stays as plain text in the body font.
+
+Results on the two reference jobs (`report.json`): body median 10.6 / 10.34
+(retain-pdf 10.9 / 10.25), headings 0.96–0.99 × retain-pdf, justification
+≤ 0.15 em per gap, 0 failed formulas, 0 vector hits, invariants 0, drift 0.

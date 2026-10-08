@@ -93,7 +93,8 @@ host (DOM, Zotero, LitMTrans).
 `contentFor`, `contentAreas`, `lineModel` (`"measurer"`, `"css"` or
 `"retain"`), `inkExtents`, `strict` (strict collisions), `pixelRound`, `trace`,
 `typography` (`"default"` or `"retain"`), `collisionPolicy` (`"strict"`,
-`"tolerant"` or `"ink"`).
+`"tolerant"` or `"ink"`), `justifyCap` (em per justifiable gap or null),
+`balance` (balanced-breaking settings or null).
 
 `run` is created per `fitDocument` call: `doc` (pages, nodes, mode),
 `fitOptions`, `all` (`doc.nodes`), `scopedNodes(predicate)`,
@@ -117,9 +118,14 @@ the fit writes:
 - `formula.scale`, `formula.numberRight`, `formula.fitted` — formula passes.
 - `_geometryLast`, `_box` — geometry fast-path caches (private to `geometry.js`
   and `document.js`'s `nodeBox`).
+- `balanceLines` — balanced breaking accepted by `passes/justify.js` (part of
+  the geometry cache key).
+- `alignOverride` — set when the node is built (retain: left-aligned main title).
 - Profile "retain" only: `retainLeadingEm`, `retainInkFloor` (first-line ink
-  floor, part of the geometry cache key), `retainUnified`, `retainGrewFrom`;
-  `baseFont`, `lineRatio`, `baseLineRatio` are rewritten by its prepare step.
+  floor, part of the geometry cache key), `retainUnified`, `retainGrewFrom`,
+  `retainUnsettled` (scheduled non-body text; read by the ink collision
+  policy); `baseFont`, `lineRatio`, `baseLineRatio` are rewritten by its
+  prepare step.
 
 ## Browser load order
 
@@ -187,23 +193,47 @@ What the switch selects:
   body paragraphs without a box check), but never onto another node's ink,
   a preserved element, the page edge, or into another text box of the same
   column (a line band outside its box may enter such a box by ≤ 1 pt).
-- **`passes/retain-body.js`**, in this order, before and in place of the body
-  group of `run.js`:
+- **`passes/retain-titles.js`** (before the body pass): every heading sized
+  on its own box like `solve_title_fit` (fill cap, band ≤ 0.94 × box height,
+  title / heading leading); after the body pass, backed off in 0.25 pt steps
+  down to 0.72 × / 0.78 × where its ink still touches something. Titles are
+  measured with `measurers.bold` when the host provides it and serialized
+  with `fontWeight: "bold"`; the main title is left-aligned.
+- **`passes/retain-body.js`**, in place of the body group and the DOM
+  non-body passes of `run.js`:
   1. prepare: seed blend (`estimate_font_size_pt`: 86% page baseline, 42nd
      percentile, pitch-scaled; 14% block; clamp 8.4–14.2), body and non-body
      leading (`estimate_leading_em`), first-line ink floors;
-  2. block fit (`fit_translated_block_metrics` schedule: page body − 0.12,
-     0.12 pt steps, emergency 0.14 pt steps to page body − 0.7);
-  3. unify to the book target (25th percentile of stable anchors);
-  4. underfill grow → harmonize → recover;
-  5. unify again → recover again.
+  2. schedule non-body text (`fit_translated_block_metrics`, non-body
+     branch). These nodes are *unsettled* until step 7: for others they block
+     only with the ink inside their own box;
+  3. body block fit — retain-pdf's own `fit_translated_block_metrics`
+     (character-unit demand vs `box_capacity_units`, dense_small_box flags,
+     aggressive gate before the emergency floor; `fitOptions.
+     retainFaithfulSchedule: false` restores the earlier density
+     approximation);
+  4. unify to the book target (25th percentile of stable anchors);
+  5. underfill grow → harmonize → recover; unify again → recover again;
+  6. annotation fonts (`unify_annotation_fonts` + the body cap: caption ≤
+     0.88 ×, footnote ≤ 0.82 × the body median);
+  7. non-body safety net.
   Every size or leading a rule asks for is checked against the ink collision
-  test; if it fails, the largest value in between that passes is used. A
-  first line touched by ink from above gets a lower ink floor instead of a
-  smaller size.
-- Non-body groups keep the DOM rules, with their line ratio capped at
-  `capHeight + NON_BODY_LEADING_MAX` and retain-pdf's non-body leading as the
-  starting ratio.
+  test. On failure: a first line touched by ink from above gets a lower ink
+  floor; then leading is given back down to `BODY_/NON_BODY_LEADING_MIN`
+  (`fitOptions.retainLeadingFirstRepair: false` skips this); then the font
+  shrinks to the largest size that passes.
+- **Justification** (retain profile defaults): the retain line model paints a
+  justified line at most `natural + gaps × justifyCap` wide (0.15 em per
+  Typst-justifiable gap — spaces and CJK characters; a line without such a
+  gap is not justified), and `passes/justify.js` re-breaks justified text
+  with balanced breaking after the fit, keeping it only if the line count,
+  every line's vertical extent and the collision state are unchanged
+  (`config.justifyCap`, `config.balanceLines`).
+
+Not ported from retain-pdf: short / low-height body inheritance, the page
+body anchor, comfort leading, long-paragraph harmonizing, adjacent smoothing,
+the leading refit after unify, the annotation underfill growth, typography
+memory.
 
 `fitOptions.retainBandFit: true` additionally keeps each body band inside its
 box (Typst `measure() <= fit_height`); retain-pdf itself does not require this.
