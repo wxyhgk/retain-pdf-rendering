@@ -56,7 +56,7 @@ function compareMeasurements(js, viaTypst) {
 const PYTHON = process.env.RPR_PYTHON || path.resolve(__dirname, "../../../retain-pdf/backend/.venv/bin/python");
 
 function parseArgs(argv) {
-  const options = { fixture: "", mode: "", demoInlineMath: false, out: "", measurer: "typst", noPng: false, fitter: "prototype" };
+  const options = { fixture: "", mode: "", demoInlineMath: false, out: "", measurer: "typst", noPng: false, fitter: "prototype", stamps: true };
   for (let i = 0; i < argv.length; i++) {
     const value = argv[i];
     if (value === "--mode") options.mode = argv[++i];
@@ -67,6 +67,7 @@ function parseArgs(argv) {
     else if (value === "--typography") options.typography = argv[++i];
     else if (value === "--no-png") options.noPng = true;
     else if (value === "--no-drift-check") options.noDriftCheck = true;
+    else if (value === "--no-stamps") options.stamps = false;
     else if (!options.fixture) options.fixture = value;
   }
   if (!options.fixture) throw new Error("usage: run.js <fixture> [--mode translation|source] [--demo-inline-math] [--out DIR]");
@@ -108,7 +109,7 @@ function main() {
   fs.rmSync(out, { recursive: true, force: true });
   fs.mkdirSync(out, { recursive: true });
   const timings = {};
-  const maths = new MathStore(out);
+  const maths = new MathStore(out, { stamps: options.stamps });
 
   const nodesByPage = model.pages.map(page => pageNodes(page, mode));
   nodesByPage.forEach((nodes, pageIndex) => nodes.forEach((node, index) => {
@@ -139,6 +140,7 @@ function main() {
     if (options.measurer === "both") {
       const measureSource = measureDocument(jobs, maths);
       fs.writeFileSync(path.join(out, "measure.typ"), measureSource);
+      maths.prepareStamps(typst);
       const viaTypst = typst.queryMeasurements("measure.typ", out);
       timings.typstMeasureMs = Math.round(viaTypst.ms);
       measureComparison = compareMeasurements(js.values, viaTypst.values);
@@ -159,6 +161,7 @@ function main() {
     const measureSource = measureDocument(jobs, maths);
     timings.emitMeasureMs = Math.round(performance.now() - started - maths.stats.ms);
     fs.writeFileSync(path.join(out, "measure.typ"), measureSource);
+    maths.prepareStamps(typst);
     measured = typst.queryMeasurements("measure.typ", out);
     timings.typstMeasureMs = Math.round(measured.ms);
   }
@@ -180,6 +183,7 @@ function main() {
     options.measurer === "typst" ? {} : { paragraphStack: explicitParagraphStack });
   timings.emitOutputMs = Math.round(performance.now() - started);
   fs.writeFileSync(path.join(out, "doc.typ"), doc);
+  maths.prepareStamps(typst);
   const compiled = typst.compile("doc.typ", "doc.pdf", out);
   timings.typstCompileMs = Math.round(compiled.ms);
   timings.mathjaxMs = Math.round(maths.stats.ms);
@@ -341,6 +345,7 @@ function runModelFitter({ options, fixture, model, mode, out, maths, nodesByPage
   const doc = fittedDocument(fitted, nodesByPage, maths, emitters);
   timings.emitOutputMs = Math.round(performance.now() - started);
   fs.writeFileSync(path.join(out, "doc.typ"), doc);
+  maths.prepareStamps(typst);
   const compiled = typst.compile("doc.typ", "doc.pdf", out);
   timings.typstCompileMs = Math.round(compiled.ms);
   timings.mathjaxMs = Math.round(maths.stats.ms);

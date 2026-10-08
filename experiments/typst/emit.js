@@ -5,6 +5,7 @@ const path = require("node:path");
 const crypto = require("node:crypto");
 const { texToSVG } = require("./math-svg");
 const { typstString, LINE_BREAK } = require("./content");
+const { StampStore, stampsValue } = require("./math-stamps");
 
 const FONT_FAMILY = "Source Han Serif SC";
 // Greedy ("simple") breaking matches the browser's line breaks exactly on the
@@ -20,15 +21,28 @@ const LINEBREAKS = JSON.stringify(process.env.RPR_LINEBREAKS || "simple");
 // par(leading: (r - 1) * size). CSS also puts half of that leading above the
 // first and below the last line; the output adds it as block inset.
 //
-// rpr-math: the visible formula is the MathJax SVG; on top of it, inside the
+// rpr-math: the visible formula is the MathJax SVG (src: a file path), or the
+// same outlines as reusable PDF stamps (src: (stamps: file, items: ...), see
+// math-stamps.js); on top of it, inside the
 // same fixed-size box, the LaTeX source is set as fully transparent text
 // scaled to the SVG's width. PDF text extraction / copy / search therefore
 // yield the LaTeX, while the box (not the text) decides layout.
-const PREAMBLE = `#let rpr-math(src, w, h, depth, tex) = box(baseline: depth, width: w, height: h, {
+const PREAMBLE = `// Each item: (page, x, y, w, h) as fractions of the formula box; page 0 is a
+// filled rule (fraction bar, vinculum), page n > 0 is outline n of the stamps PDF.
+// The stamps are decorative (the transparent LaTeX above them is the content),
+// so they are PDF artifacts: no structure element per glyph in tagged output.
+#let rpr-draw(src, w, h) = if type(src) == str { image(src, width: w, height: h) } else { pdf.artifact({
+  for (page, x, y, sw, sh) in src.items {
+    place(top + left, dx: w * x, dy: h * y, if page > 0 {
+      image(src.stamps, page: page, width: w * sw, height: h * sh, fit: "stretch")
+    } else { rect(width: w * sw, height: h * sh, fill: black, stroke: none) })
+  }
+}) }
+#let rpr-math(src, w, h, depth, tex) = box(baseline: depth, width: w, height: h, {
   // Only placed children: the box has no text line of its own, so its
   // baseline is its bottom edge and baseline: depth lowers it by the
   // formula's depth below the surrounding baseline.
-  place(top + left, image(src, width: w, height: h))
+  place(top + left, rpr-draw(src, w, h))
   place(bottom + left, dy: -depth, context {
     let (wa, ha) = (w.to-absolute(), h.to-absolute())
     let natural = measure(text(size: 10pt, tex)).width
@@ -46,12 +60,34 @@ function fmt(value) {
 }
 
 class MathStore {
-  constructor(outDir) {
+  // stamps: draw formulas from reusable per-outline PDF stamps instead of
+  // inlining each formula SVG (math-stamps.js). The caller must run
+  // prepareStamps() before compiling or querying a document that uses them.
+  constructor(outDir, { stamps = false } = {}) {
     this.outDir = outDir;
     this.dir = path.join(outDir, "math");
     fs.mkdirSync(this.dir, { recursive: true });
     this.stats = { formulas: 0, failed: [], ms: 0 };
     this.written = new Map();
+    this.stamps = stamps ? new StampStore(outDir) : null;
+    this.stampsCompiled = 0;
+  }
+
+  // Every rendered formula with its box metrics, SVG file and stamp items
+  // (diagnostics / parity checks).
+  manifest() {
+    return [...this.written.values()].filter(entry => entry.ok)
+      .map(({ tex, file, widthEm, heightEm, depthEm, items }) => ({ tex, file, widthEm, heightEm, depthEm, items: items || null }));
+  }
+
+  // (Re)builds math/stamps.pdf when formulas added new outlines since the
+  // last call.
+  prepareStamps(typst) {
+    if (!this.stamps || this.stamps.list.length === this.stampsCompiled) return null;
+    const typ = this.stamps.writeSources();
+    const result = typst.compile(typ, this.stamps.file, this.outDir);
+    this.stampsCompiled = this.stamps.list.length;
+    return result;
   }
 
   // Returns { ok, file (relative to outDir), widthEm, heightEm, depthEm }.
@@ -71,10 +107,18 @@ class MathStore {
       const name = `${crypto.createHash("sha1").update(key).digest("hex").slice(0, 16)}.svg`;
       fs.writeFileSync(path.join(this.dir, name), result.svg);
       entry = { ok: true, tex, file: `math/${name}`, widthEm: result.widthEm, heightEm: result.heightEm, depthEm: result.depthEm };
+      if (this.stamps) entry.items = this.stamps.formulaItems(result.svg, tex);
     }
     this.written.set(key, entry);
     return entry;
   }
+}
+
+// The first argument of rpr-math for a rendered formula: stamp placements when
+// the store builds stamps and this formula could be flattened, else its SVG.
+function mathVisual(entry, maths) {
+  if (maths && maths.stamps && entry.items) return stampsValue(maths.stamps.file, entry.items);
+  return typstString(entry.file);
 }
 
 // Inline content (text + inline formulas) as Typst code-mode expressions.
@@ -91,7 +135,7 @@ function inlineContent(segments, maths) {
     const entry = maths.get(segment.value, false);
     const tex = `$${segment.value}$`;
     pieces.push(entry.ok
-      ? `rpr-math(${typstString(entry.file)}, ${fmt(entry.widthEm)}em, ${fmt(entry.heightEm)}em, ${fmt(entry.depthEm)}em, ${typstString(tex)})`
+      ? `rpr-math(${mathVisual(entry, maths)}, ${fmt(entry.widthEm)}em, ${fmt(entry.heightEm)}em, ${fmt(entry.depthEm)}em, ${typstString(tex)})`
       : `rpr-tex-fallback(${typstString(tex)})`);
   }
   return pieces.length ? `[#${pieces.join("#")}]` : "[]";
@@ -184,7 +228,7 @@ function formulaBlock(node, maths) {
   const scale = Math.min(scaleW, Math.max(0.7, scaleH), 1.35);
   const em = base * scale;
   const tex = `$$${node.tex}$$`;
-  const formula = `rpr-math(${typstString(entry.file)}, ${fmt(entry.widthEm * em)}pt, ${fmt(entry.heightEm * em)}pt, ${fmt(entry.depthEm * em)}pt, ${typstString(tex)})`;
+  const formula = `rpr-math(${mathVisual(entry, maths)}, ${fmt(entry.widthEm * em)}pt, ${fmt(entry.heightEm * em)}pt, ${fmt(entry.depthEm * em)}pt, ${typstString(tex)})`;
   const parts = [`align(center + horizon, ${formula})`];
   if (node.number) {
     const right = node.numberRight != null ? node.numberRight - x0 : width;
@@ -243,4 +287,4 @@ function outputDocument(pages, nodesByPage, styles, maths, options = {}) {
   return lines.join("\n") + "\n";
 }
 
-module.exports = { PREAMBLE, MathStore, measureDocument, outputDocument, paragraphStack, FONT_FAMILY, placed, tableBlock, codeBlock };
+module.exports = { PREAMBLE, MathStore, mathVisual, measureDocument, outputDocument, paragraphStack, FONT_FAMILY, placed, tableBlock, codeBlock };

@@ -237,3 +237,24 @@ Flags after it override single settings (`--seed calibrated`,
 Results on the two reference jobs (`report.json`): body median 10.6 / 10.34
 (retain-pdf 10.9 / 10.25), headings 0.96–0.99 × retain-pdf, justification
 ≤ 0.15 em per gap, 0 failed formulas, 0 vector hits, invariants 0, drift 0.
+
+## Formula stamps and PDF size
+
+Formulas are drawn from reusable per-outline PDF stamps (see
+experiments/typst/README.md, "Formula glyph stamps"); `--no-stamps` restores
+whole-formula SVGs. The overlay writes `math/formulas.json` (every formula with
+its SVG and stamp items) and reports `stamps` (formulas, fallbacks, glyph
+draws, rules, distinct outlines) and `timings.stampsCompileMs`.
+
+| job | overlay.pdf SVG → stamps | final.pdf SVG → stamps | retain-pdf | source |
+|---|---|---|---|---|
+| 量子化学-14 (34 p, 451 formulas) | 1,543 → 653 KB | 2,463 → 1,768 KB | 1,593 KB | 1,447 KB |
+| SGNT (11 p, 68 formulas) | 361 → 313 KB | 960 → 925 KB | 900 KB | 799 KB |
+
+量子化学: 450 of 451 formulas stamped (the one fallback is `\text{Å}`, which
+MathJax sets as a `<text>` glyph), 2,970 glyph draws from 153 outlines plus 12
+rules. Pixel parity at 600 dpi (stamp-parity.js): SGNT max difference 41/255
+grey levels; 量子化学 5 formulas with edge pixels over 64 (at most 0.97% of a
+formula's ink), ink totals within 0.12% and centroids within 0.08 px — edge
+rasterisation, no missing or moved shapes. Extracted text is byte-identical to
+the SVG output (the LaTeX copy layer is unchanged).

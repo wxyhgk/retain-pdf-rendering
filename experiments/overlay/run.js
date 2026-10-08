@@ -31,13 +31,14 @@ const PRESETS = {
 };
 
 function parseArgs(argv) {
-  const options = { job: "", out: "", pages: Infinity, png: [], driftCheck: true, inheritBelow: 0.85, limiterRounds: 0, bodyMaxFactor: 1, strictSourceFit: true, bodyLineHeight: 1.25, fontCaps: true };
+  const options = { job: "", out: "", pages: Infinity, png: [], driftCheck: true, inheritBelow: 0.85, limiterRounds: 0, bodyMaxFactor: 1, strictSourceFit: true, bodyLineHeight: 1.25, fontCaps: true, stamps: true };
   for (let i = 0; i < argv.length; i++) {
     const value = argv[i];
     if (value === "--out") options.out = argv[++i];
     else if (value === "--pages") options.pages = Number(argv[++i]);
     else if (value === "--png") options.png = argv[++i].split(",").map(Number).filter(Number.isFinite);
     else if (value === "--no-drift-check") options.driftCheck = false;
+    else if (value === "--no-stamps") options.stamps = false;
     // Retain-profile ablations (all on by default in the preset).
     else if (value === "--no-smoothing") options.retainSmoothing = false;
     else if (value === "--no-region-expansion") options.retainRegionExpansion = false;
@@ -163,7 +164,7 @@ print(json.dumps(out))
 `, [job.sourcePdf])) : {};
   timings.sourceSizesMs = Math.round(performance.now() - started);
 
-  const maths = new MathStore(options.out);
+  const maths = new MathStore(options.out, { stamps: options.stamps });
   const renderMathBox = (tex, display) => {
     const entry = maths.get(tex, display);
     if (entry.ok) return { widthEm: entry.widthEm, heightEm: entry.heightEm, depthEm: entry.depthEm };
@@ -292,6 +293,9 @@ print(json.dumps(out))
   const { source, painted } = overlayDocument(fitted, paint, maths);
   timings.emitMs = Math.round(performance.now() - started);
   fs.writeFileSync(path.join(options.out, "overlay.typ"), source);
+  const stamped = maths.prepareStamps(typst);
+  fs.writeFileSync(path.join(options.out, "math", "formulas.json"), JSON.stringify(maths.manifest()));
+  timings.stampsCompileMs = stamped ? Math.round(stamped.ms) : 0;
   const compiled = typst.compile("overlay.typ", "overlay.pdf", options.out);
   timings.typstCompileMs = Math.round(compiled.ms);
   timings.mathjaxMs = Math.round(maths.stats.ms);
@@ -431,6 +435,7 @@ for n in pages:
     examples: { lineOverlaps: violations.lineOverlaps.slice(0, 5), outside: violations.outside.slice(0, 5), order: textOrder.slice(0, 5), obstacleHits: obstacleHits.slice(0, 8) },
     drift: drift && { nodes: drift.nodes, mismatch: drift.mismatch.length, examples: drift.mismatch.slice(0, 5) },
     formulas: { rendered: maths.stats.formulas, failed: maths.stats.failed.length, failedExamples: maths.stats.failed.slice(0, 5), copiedOutOfPdf: [...text.matchAll(/\$[^$\n]{1,80}\$/g)].length },
+    stamps: maths.stamps ? { formulas: maths.stamps.stats.formulas, fallbacks: maths.stamps.stats.fallbacks.length, fallbackExamples: maths.stamps.stats.fallbacks.slice(0, 5), glyphDraws: maths.stamps.stats.draws, rules: maths.stamps.stats.rects, outlines: maths.stamps.list.length } : null,
     bodyFont: { ours: summary(bodyOurs), retainPdf: summary(bodyRef), oursIndividual: summary(comparisons.filter(c => c.kind === "text").map(c => c.ours)) },
     // Fill of each painted body paragraph: ink height over its box height.
     bodyFill: (() => {

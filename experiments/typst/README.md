@@ -125,3 +125,32 @@ Fits with `src/fit-model.js` (the DOM fitter's rule set on data) and `src/text`
 computed (`emit-model.js`): Typst never breaks or positions text itself, so the
 drift check (each emitted line renders as exactly one line) must report 0.
 Tables, code and image placeholders reuse the prototype emitters.
+
+## Formula glyph stamps (default; `--no-stamps` for whole-formula SVGs)
+
+Typst copies an SVG image's paths into the page content on every use, but
+embeds each page of a PDF image once as a Form XObject and references it on
+every use (200 uses of one formula: SVG 988 KB, PDF image 42 KB; pages of a
+multi-page PDF selected with `image(..., page: n)` are deduplicated per page).
+`math-stamps.js` therefore flattens each MathJax SVG (translate/scale groups,
+the root `scale(1,-1)`, `<rect>` rules; empty `<path d="">` spaces skipped)
+into placements, writes one page per distinct glyph outline to
+`math/stamps.pdf`, and `rpr-math` draws a formula as placed stamps plus rules
+(`rpr-draw` in emit.js) inside the same box, under the same transparent LaTeX
+copy layer. Formulas outside that subset (MathJax `<text>`, mirrored or
+rotated glyphs, other path commands) keep their whole SVG. Details:
+
+- Stamp pages are scaled so their smaller side is 4pt: Typst pads any page
+  under 3pt to 3pt, which left a small outline (a decimal point) in a corner
+  and shrank it when stretched. Placements are fractions of the formula box,
+  so the page scale never shows.
+- The stamps are wrapped in `pdf.artifact`: tagged PDF output otherwise
+  writes one uncompressed StructElem object per placed image (4,751 on
+  量子化学-14, ~550 KB of the overlay).
+- `MathStore({ stamps: true })` collects outlines; runners call
+  `maths.prepareStamps(typst)` before each compile/query (it recompiles only
+  when new outlines appeared). `MathStore.manifest()` lists every formula with
+  its SVG and stamp items.
+- `node experiments/typst/stamp-parity.js <out dir> [--dpi 600]` renders every
+  stamped formula from its SVG and from its stamps at the same box size and
+  compares the rasters (parity.json, worst crops).

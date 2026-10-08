@@ -7,7 +7,7 @@
 // are ours, never Typst's.
 
 const { typstString } = require("./content");
-const { PREAMBLE, FONT_FAMILY } = require("./emit");
+const { PREAMBLE, FONT_FAMILY, mathVisual } = require("./emit");
 
 const OBJECT = "￼";
 const LINE_SEPARATOR = " ";
@@ -37,7 +37,7 @@ function mathCall(maths, tex, display, size) {
   const entry = maths.get(tex, display);
   const source = display ? `$$${tex}$$` : `$${tex}$`;
   if (!entry.ok) return `rpr-tex-fallback(${typstString(source)})`;
-  return `rpr-math(${typstString(entry.file)}, ${fmt(entry.widthEm * size)}pt, ${fmt(entry.heightEm * size)}pt, ${fmt(entry.depthEm * size)}pt, ${typstString(source)})`;
+  return `rpr-math(${mathVisual(entry, maths)}, ${fmt(entry.widthEm * size)}pt, ${fmt(entry.heightEm * size)}pt, ${fmt(entry.depthEm * size)}pt, ${typstString(source)})`;
 }
 
 function lineBody(flat, start, end, maths, size) {
