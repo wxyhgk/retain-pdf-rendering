@@ -8,7 +8,7 @@ package's pure-JS measurer and data-driven fitter instead of Typst
 ```
 node experiments/overlay/run.js <retain-pdf job dir> [--png 1,2,5] [--out DIR]
      [--no-drift-check] [--pages N] [--limiter-rounds N] [--body-max-factor F]
-     [--body-line-height R] [--inherit-below F] [--allow-spill]
+     [--body-line-height R] [--inherit-below F] [--allow-spill] [--no-font-caps]
 ```
 
 The job directory is only read. Output (gitignored) goes to
@@ -129,3 +129,29 @@ What would replace its `layout/` + `output/typst` block fitting:
    size: shared font glyphs instead of per-SVG paths).
 3. retain-pdf compiles with the same fonts and `--ignore-system-fonts`, then
    merges as today.
+
+## Body font size (per-paragraph caps)
+
+One shared body size used to stop at the tightest paragraph of the whole
+document (量子化学-14: 9.0 pt for a 10 pt source). Measured standalone, at
+the source line pitch (1.20 em), the median paragraph fits 10.9 pt in its own
+box, but 51 of 309 do not fit 10 pt, and the old detach-the-limiter rounds
+could not keep up. `bodyNodeFontCaps` (fit-model, on by default here) gives
+each body paragraph that cannot reach the ceiling inside its box a cap: first
+the loosest line ratio down to 1.12, then the largest size that fits. Capped
+paragraphs no longer limit the group, so everything else reaches the source
+size.
+
+| job | before | now (cap = source) | `--body-max-factor 1.1` | retain-pdf |
+|---|---|---|---|---|
+| 量子化学-14 | 9.0 | 10.0 (285/291 at 10, min 9.3) | 10.0 | 10.9 |
+| SGNT (2-col) | 9.8 | 9.8 (34/36, min 9.55) | 10.3 | 10.31 |
+
+Both jobs: 0 line overlaps, 0 text on preserved content, 0 outside the page,
+0 drift. Two strict-mode audit fixes were needed for this: text blocks are
+audited too (not only streams), with every other node's full ink as a
+barrier; and when a collision sits on a node's first line with text above it,
+the node above is repaired (a tighter line ratio cannot lift the first line of
+the lower one: OCR boxes of tightly set paragraphs overlap by a fraction of a
+point). That second fix is verified on these real jobs only; a synthetic unit
+test could not reproduce the overlapping-box case yet.

@@ -25,7 +25,7 @@ const { overlayDocument } = require("./emit-overlay");
 const PYTHON = process.env.RPR_PYTHON || path.resolve(__dirname, "../../../retain-pdf/backend/.venv/bin/python");
 
 function parseArgs(argv) {
-  const options = { job: "", out: "", pages: Infinity, png: [], driftCheck: true, inheritBelow: 0.85, limiterRounds: 10, bodyMaxFactor: 1, strictSourceFit: true, bodyLineHeight: 1.25 };
+  const options = { job: "", out: "", pages: Infinity, png: [], driftCheck: true, inheritBelow: 0.85, limiterRounds: 0, bodyMaxFactor: 1, strictSourceFit: true, bodyLineHeight: 1.25, fontCaps: true };
   for (let i = 0; i < argv.length; i++) {
     const value = argv[i];
     if (value === "--out") options.out = argv[++i];
@@ -37,6 +37,8 @@ function parseArgs(argv) {
     else if (value === "--body-max-factor") options.bodyMaxFactor = Number(argv[++i]);
     else if (value === "--allow-spill") options.strictSourceFit = false;
     else if (value === "--body-line-height") options.bodyLineHeight = Number(argv[++i]);
+    else if (value === "--font-caps") options.fontCaps = true;
+    else if (value === "--no-font-caps") options.fontCaps = false;
     else if (!options.job) options.job = value;
   }
   if (!options.job) throw new Error("usage: run.js <jobDir> [--out DIR] [--pages N] [--png 1,3] [--no-drift-check]");
@@ -146,7 +148,7 @@ print(json.dumps(out))
   // strictSourceFit: text must stay inside its own source box. The overlay
   // cannot see vector rules or frames that are not OCR blocks, so growing
   // into "free" space below a box is not safe here.
-  const fitOptions = { mode: "translation", bodyMaxFont, strictSourceFit: options.strictSourceFit };
+  const fitOptions = { mode: "translation", bodyMaxFont, strictSourceFit: options.strictSourceFit, bodyNodeFontCaps: Boolean(options.fontCaps) };
   let fitted = fitter.fitDocument(model, fitOptions);
   const limiterRounds = [];
   for (let round = 0; round < options.limiterRounds; round++) {

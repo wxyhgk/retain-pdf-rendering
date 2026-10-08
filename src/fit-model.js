@@ -662,11 +662,15 @@
       return Number.isFinite(value) && value > 0 ? value : fallback;
     }
 
+    // fontCap / lineRatioCap are only set by bodyNodeFontCaps (see
+    // capBodyNodes); without them every node takes the group's style.
     function applyGroup(nodes, fontSize, lineRatio) {
       for (const node of nodes) {
         if (!node) continue;
-        node.style.fontSize = Number(fontSize.toFixed(2));
-        node.style.lineRatio = Number(lineRatio.toFixed(3));
+        const font = Number.isFinite(node.fontCap) ? Math.min(fontSize, node.fontCap) : fontSize;
+        const ratio = Number.isFinite(node.lineRatioCap) ? Math.min(lineRatio, node.lineRatioCap) : lineRatio;
+        node.style.fontSize = Number(font.toFixed(2));
+        node.style.lineRatio = Number(ratio.toFixed(3));
       }
     }
 
@@ -1084,7 +1088,16 @@
       const owned = ink.filter(rect => rect.left >= box.left - 1e-6 && rect.right <= box.right + 1e-6 &&
         rect.top >= box.top - 1e-6 && rect.bottom <= box.bottom + 1e-6);
       const withBox = owned.concat([box]);
-      const barrier = { element, box, ink: owned, inkBounds: rectUnion(owned), withBox, withBoxBounds: rectUnion(withBox) };
+      // allInk (spilled ink included) is only used by the final audit: two
+      // spills meeting in the gap between boxes are invisible to the owned-ink
+      // rule from both sides.
+      // Text nodes contribute their glyphs only (source boxes often overlap by
+      // a fraction of a point); a node without text already returns its box.
+      const allInk = ink;
+      const barrier = {
+        element, box, ink: owned, inkBounds: rectUnion(owned), withBox, withBoxBounds: rectUnion(withBox),
+        allInk, allInkBounds: rectUnion(allInk)
+      };
       strictBarriers.set(value, barrier);
       return barrier;
     }
@@ -1234,8 +1247,8 @@
                     !horizontalBoxesOverlap(own, barrier.box, 1.5) && insideOwn) {
                   return false;
                 }
-                const rects = insideOwn ? barrier.ink : barrier.withBox;
-                const bounds = insideOwn ? barrier.inkBounds : barrier.withBoxBounds;
+                const rects = options.fullInkBarriers ? barrier.allInk : (insideOwn ? barrier.ink : barrier.withBox);
+                const bounds = options.fullInkBarriers ? barrier.allInkBounds : (insideOwn ? barrier.inkBounds : barrier.withBoxBounds);
                 if (!bounds || !rectsOverlap(rect, bounds, 0)) return false;
                 return rects.some((other) => rectsOverlap(rect, other, 0));
               });
@@ -1317,6 +1330,53 @@
           details.push({ node, hasText: metrics.hasText, bottomGap, band, overflowAmount, reachedBand: metrics.hasText && bottomGap <= band });
         }
         return { overflow, allReachedBand, maxBottomGap, details };
+      }
+
+      // bodyNodeFontCaps (overlay hosts, where every paragraph owns its source
+      // box): one shared body size stops at the tightest paragraph of the whole
+      // document. Give each paragraph that cannot reach maxFont inside its own
+      // box a ceiling instead: first the loosest line ratio (down to
+      // minLineRatio) that fits at maxFont, else that tight ratio plus the
+      // largest size on the step ladder that fits. A paragraph sitting at its
+      // ceiling no longer overflows, so it stops limiting the group.
+      function capBodyNodes(nodes, { maxFont, minFont, step, minLineRatio }) {
+        for (const node of nodes) {
+          delete node.fontCap;
+          delete node.lineRatioCap;
+          const saved = { fontSize: node.style.fontSize, lineRatio: node.style.lineRatio };
+          const fits = (font, ratio) => {
+            node.style.fontSize = font;
+            node.style.lineRatio = ratio;
+            return !measureGroup([node]).overflow;
+          };
+          const baseRatio = Number(node.lineRatio || 1.1);
+          if (!fits(maxFont, baseRatio)) {
+            const tightRatio = Math.min(baseRatio, minLineRatio);
+            if (fits(maxFont, tightRatio)) {
+              let low = tightRatio;
+              let high = baseRatio;
+              while (high - low > 0.01) {
+                const middle = (low + high) / 2;
+                if (fits(maxFont, middle)) low = middle;
+                else high = middle;
+              }
+              node.lineRatioCap = Math.floor(low * 1000) / 1000;
+            }
+            else {
+              node.lineRatioCap = tightRatio;
+              let low = -1;
+              let high = Math.floor((maxFont - minFont) / step + 1e-9);
+              while (high - low > 1) {
+                const middle = (low + high) >> 1;
+                if (fits(minFont + middle * step, tightRatio)) low = middle;
+                else high = middle;
+              }
+              node.fontCap = minFont + Math.max(0, low) * step;
+            }
+          }
+          node.style.fontSize = saved.fontSize;
+          node.style.lineRatio = saved.lineRatio;
+        }
       }
 
       function wouldCollideWithBlocks(nodes, options) {
@@ -1725,12 +1785,18 @@
       // every visible glyph against every layout box, including cross-group cases
       // such as body text beside references. Only a detected source is backed off.
       function enforceFinalTextCollisionSafety() {
-        const nodes = scopedNodes(Select.finalAudit);
+        // Strict collisions never treat ink outside a node's own box as a
+        // barrier while fitting, so a block's first line may optically rise
+        // into the stream above it unseen by either pass. Audit every text
+        // block as well (formulas keep their own pass; obstacles have no text).
+        const nodes = scopedNodes(strict
+          ? node => Select.finalAudit(node) || (isBlock(node) && !Select.formula(node) && textRectsInPage(node).length > 0)
+          : Select.finalAudit);
         const exhausted = new Set();
         const repairCounts = new Map();
         // Covers the full 42px-to-4.8px backoff range with a small margin.
         const MAX_FINAL_COLLISION_REPAIRS_PER_NODE = 192;
-        const options = FINAL_AUDIT_OPTIONS;
+        const options = strict ? { ...FINAL_AUDIT_OPTIONS, fullInkBarriers: true } : FINAL_AUDIT_OPTIONS;
         // The legacy loop restarted from node zero after every backoff.  That is
         // quadratic. Recheck the changed source, then continue in source order.
         let scanIndex = 0;
@@ -1745,7 +1811,17 @@
             scanIndex += 1;
             continue;
           }
-          const source = collision.source;
+          // A collision on the source's first line with a text node above it
+          // cannot be repaired by the source: a tighter line ratio or a smaller
+          // size barely moves its first line (source boxes often overlap by a
+          // fraction of a point). Repair the node above instead.
+          let source = collision.source;
+          const blocker = collision.blocker;
+          if (strict && blocker && blocker !== source && collision.rect && !exhausted.has(blocker) &&
+              nodeBox(blocker).top < nodeBox(source).top && nodes.includes(blocker)) {
+            const firstTop = Math.min(...textRectsInPage(source).map(rect => rect.top));
+            if (collision.rect.top <= firstTop + 1e-6) source = blocker;
+          }
           const repairs = (repairCounts.get(source) || 0) + 1;
           repairCounts.set(source, repairs);
           if (repairs > MAX_FINAL_COLLISION_REPAIRS_PER_NODE) {
@@ -1768,7 +1844,10 @@
             && (!isInheritedBodyText || !ALLOW_INHERITED_BODY_FONT_BACKOFF);
           const minLineRatio = isBodyText ? 1.02 : 0.98;
           const ownBox = elementBoxInPage(source);
+          // collision.rect belongs to collision.source, so only judge it when
+          // the repair was not handed to the node above.
           const firstLineTopCollision = !isBodyText
+            && source === collision.source
             && collision.rect
             && collision.rect.top < ownBox.top - 1;
           // Increase leading when first-line ink crosses the source box's top edge.
@@ -1982,6 +2061,14 @@
       clusterTitleFontSizes(Select.anyTitle, 1.0);
       keepShortTitlesOnOneLine(Select.otherTitle, { maxCharacters: 12, maxBorrowPx: 18, maxWidthRatio: 1.35 });
       const bodyMaxFont = Number(fitOptions.bodyMaxFont);
+      if (fitOptions.bodyNodeFontCaps) {
+        capBodyNodes(scopedNodes(Select.body), {
+          maxFont: Number.isFinite(bodyMaxFont) && bodyMaxFont > 0 ? Math.min(13, bodyMaxFont) : 13,
+          minFont: 4.8,
+          step: 0.25,
+          minLineRatio: Number.isFinite(fitOptions.bodyCapMinLineRatio) ? fitOptions.bodyCapMinLineRatio : 1.12
+        });
+      }
       tuneGroup(Select.body, {
         label: "body",
         step: 0.5,

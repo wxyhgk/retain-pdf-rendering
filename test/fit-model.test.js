@@ -241,3 +241,31 @@ test("fit-model: bodyMaxFont caps the shared body font and is a no-op when omitt
   const capped = fit({ bodyMaxFont: cap });
   assert.ok(bodyFonts(capped).every(size => size <= cap + 1e-9), `body font must stay at or below ${cap}`);
 });
+
+test("fit-model: bodyNodeFontCaps keeps one tight paragraph from shrinking the shared body font", () => {
+  const { createOutputFitter, outputViolations } = require("./helpers/output-path");
+  const fixture = P.fixtures().find(item => item.name === "two-column-article");
+  const isBody = node => node.kind === "stream" && node.styleKind === "body_text" && node.flowKind === "text";
+  // Squeeze one body stream to 70% of its height: without caps the whole
+  // group must shrink to the size that paragraph tolerates.
+  const model = () => {
+    const copy = JSON.parse(JSON.stringify(fixture.expected));
+    const stream = copy.pages.flatMap(page => page.restoration.streams).find(item => item.debugRole === "merged_body" || item.debugRole === "body_candidate");
+    stream.bbox[3] = stream.bbox[1] + (stream.bbox[3] - stream.bbox[1]) * 0.7;
+    return { copy, id: stream.items[0].id };
+  };
+  const options = { mode: "translation", strictSourceFit: true };
+  const { copy: plainModel } = model();
+  const plain = createOutputFitter().fitDocument(plainModel, options);
+  const { copy: cappedModel, id } = model();
+  const capped = createOutputFitter().fitDocument(cappedModel, { ...options, bodyNodeFontCaps: true });
+  const body = fitted => fitted.pages.flatMap(page => page.nodes).filter(isBody);
+  const plainMax = Math.max(...body(plain).map(node => node.fontSize));
+  const others = body(capped).filter(node => !node.id.includes(id));
+  assert.ok(Math.max(...others.map(node => node.fontSize)) > plainMax,
+    `untouched paragraphs must grow past ${plainMax} once the tight one is capped`);
+  const violations = outputViolations(capped);
+  assert.equal(violations.lineOverlaps.length, 0, JSON.stringify(violations.lineOverlaps.slice(0, 2)));
+  assert.equal(violations.outside.length, 0);
+});
+
