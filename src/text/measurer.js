@@ -48,6 +48,8 @@
 
   const { LINE_SEPARATOR, isSpace } = Linebreak;
   const FIT_EPSILON = 1e-6;
+  // Steps fitFontSize walks from the estimated size before bisecting.
+  const MAX_ESTIMATE_WALK = 3;
 
   // A formula the host could not render is set as its raw LaTeX in one
   // unbreakable box (the reference Typst emitter uses DejaVu Sans Mono at
@@ -174,19 +176,77 @@
         cache.set(index, entry);
         return entry;
       };
-      if (!attempt(0).ok) return { fontSize: ladder[0], layout: attempt(0).result, fits: false, probes };
-      let low = 0;
-      let high = ladder.length - 1;
-      if (attempt(high).ok) low = high;
-      else {
-        while (high - low > 1) {
-          const middle = (low + high) >> 1;
-          if (attempt(middle).ok) low = middle;
-          else high = middle;
+      // Start next to the size the square-root estimate predicts and walk a
+      // few steps; a poor estimate falls back to bisecting the interval the
+      // walk has bracketed, so the answer matches a plain binary search.
+      const last = ladder.length - 1;
+      const guess = estimateFitIndex(prepared, fitOptions, ladder, step);
+      let low = -1;
+      let high = ladder.length;
+      if (attempt(guess).ok) {
+        low = guess;
+        for (let walk = 0; walk < MAX_ESTIMATE_WALK && low < last; walk++) {
+          if (attempt(low + 1).ok) low += 1;
+          else { high = low + 1; break; }
         }
+      }
+      else {
+        high = guess;
+        for (let walk = 0; walk < MAX_ESTIMATE_WALK && high > 0; walk++) {
+          if (attempt(high - 1).ok) { low = high - 1; break; }
+          high -= 1;
+        }
+      }
+      if (low < 0) {
+        if (!attempt(0).ok) return { fontSize: ladder[0], layout: attempt(0).result, fits: false, probes };
+        low = 0;
+      }
+      if (high > last && attempt(last).ok) low = last;
+      while (high - low > 1) {
+        const middle = (low + high) >> 1;
+        if (attempt(middle).ok) low = middle;
+        else high = middle;
       }
       while (low + 1 < ladder.length && attempt(low + 1).ok) low += 1;
       return { fontSize: ladder[low], layout: attempt(low).result, fits: true, probes };
+    }
+
+    // Height grows roughly with the square of the font size: a paragraph
+    // needs about fontSize * widthEm / width lines plus a part-filled last
+    // line, and each line is fontSize * lineHeight tall. Solving that
+    // quadratic for maxHeight gives the starting size; maxWidth caps it for
+    // unwrapped single-line nodes.
+    function estimateFitIndex(prepared, fitOptions, ladder, step) {
+      const stats = paragraphStats(prepared);
+      const width = Number(fitOptions.width);
+      const maxHeight = Number(fitOptions.maxHeight);
+      const lineHeight = Math.max(1, Number.isFinite(Number(fitOptions.lineHeight)) ? Number(fitOptions.lineHeight) : 1);
+      let estimate = ladder[ladder.length - 1];
+      if (stats.totalEm > 0 && width > 0 && maxHeight > 0) {
+        const a = stats.totalEm / width * lineHeight;
+        const b = (0.5 * stats.paragraphs - 1) * lineHeight + 1;
+        estimate = (-b + Math.sqrt(b * b + 4 * a * maxHeight)) / (2 * a);
+      }
+      const maxWidth = Number(fitOptions.maxWidth);
+      if (Number.isFinite(maxWidth) && stats.widestEm > 0) estimate = Math.min(estimate, maxWidth / stats.widestEm);
+      if (!Number.isFinite(estimate)) return ladder.length - 1;
+      const index = Math.floor((estimate - ladder[0]) / step + 1e-9);
+      return Math.max(0, Math.min(ladder.length - 1, index));
+    }
+
+    // Natural paragraph widths in em (one unwrapped line per paragraph),
+    // cached on the prepared content.
+    function paragraphStats(prepared) {
+      if (prepared.paragraphStats) return prepared.paragraphStats;
+      const unwrapped = Linebreak.layout(prepared, 1, Infinity, { indent: 0, hang: 0 });
+      let totalEm = 0;
+      let widestEm = 0;
+      for (const line of unwrapped.lines) {
+        totalEm += line.width;
+        widestEm = Math.max(widestEm, line.width);
+      }
+      prepared.paragraphStats = { totalEm, widestEm, paragraphs: Math.max(1, unwrapped.lines.length) };
+      return prepared.paragraphStats;
     }
 
     function naturalWidth(prepared, layoutOptions = {}) {
