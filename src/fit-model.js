@@ -10,7 +10,11 @@
 //
 //   createModelFitter({ measurer, measurers?, contentFor?, options?, lineModel?,
 //                       contentAreas?, cssPixelRounding?, trace? })
-//     .fitDocument(model, { mode, strictSourceFit, userBodyFontPt, translatedClamp })
+//     .fitDocument(model, { mode, strictSourceFit, userBodyFontPt, translatedClamp, bodyMaxFont })
+//
+// bodyMaxFont (optional, source units): ceiling for the shared body font
+// instead of the DOM rule's 13. An overlay painted onto the original page
+// keeps the source body size as its ceiling; omitted, nothing changes.
 //
 // Vertical line model (lineModel):
 //   "measurer" (default) — the measurer's own geometry (RetainPdfRendering.Text:
@@ -1977,12 +1981,13 @@
       });
       clusterTitleFontSizes(Select.anyTitle, 1.0);
       keepShortTitlesOnOneLine(Select.otherTitle, { maxCharacters: 12, maxBorrowPx: 18, maxWidthRatio: 1.35 });
+      const bodyMaxFont = Number(fitOptions.bodyMaxFont);
       tuneGroup(Select.body, {
         label: "body",
         step: 0.5,
         minFont: collisionFirstTextFit ? 4.8 : undefined,
         minLineRatio: collisionFirstTextFit ? 1.12 : undefined,
-        maxFont: 13,
+        maxFont: Number.isFinite(bodyMaxFont) && bodyMaxFont > 0 ? Math.min(13, bodyMaxFont) : 13,
         lineStep: 0.04,
         maxLineRatio: 1.45,
         // 以原始可读字号作为统一基线。后续二次迭代只允许整组正文同步增大字号，

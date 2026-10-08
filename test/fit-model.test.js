@@ -226,3 +226,18 @@ test.after(() => {
   }
   console.log(lines.join("\n"));
 });
+
+test("fit-model: bodyMaxFont caps the shared body font and is a no-op when omitted", () => {
+  const fixture = P.fixtures().find(item => item.name === "two-column-article");
+  const bodyFonts = fitted => [...new Set(fitted.pages.flatMap(page => page.nodes)
+    .filter(node => node.kind === "stream" && node.styleKind === "body_text" && node.flowKind === "text")
+    .map(node => node.fontSize))];
+  const fit = options => P.createFitter("browser").fitDocument(JSON.parse(JSON.stringify(fixture.expected)), { mode: "translation", ...options });
+  const free = fit({});
+  const uncapped = Math.max(...bodyFonts(free));
+  assert.deepEqual(fit({ bodyMaxFont: 13 }).pages.map(page => page.nodes.map(node => node.fontSize)),
+    free.pages.map(page => page.nodes.map(node => node.fontSize)), "a ceiling at the default 13 changes nothing");
+  const cap = uncapped - 1;
+  const capped = fit({ bodyMaxFont: cap });
+  assert.ok(bodyFonts(capped).every(size => size <= cap + 1e-9), `body font must stay at or below ${cap}`);
+});
