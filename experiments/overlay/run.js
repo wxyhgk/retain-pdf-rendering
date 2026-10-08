@@ -27,7 +27,7 @@ const PYTHON = process.env.RPR_PYTHON || path.resolve(__dirname, "../../../retai
 // `--preset retain`: the full retain-pdf-style configuration in one flag.
 // Flags given after it override individual settings.
 const PRESETS = {
-  retain: { typography: "retain", seed: "geometry", vectorObstacles: true, boldTitles: true, faithful: true }
+  retain: { typography: "retain", seed: "geometry", vectorObstacles: true, tightenObstacles: true, boldTitles: true, faithful: true }
 };
 
 function parseArgs(argv) {
@@ -39,6 +39,7 @@ function parseArgs(argv) {
     else if (value === "--png") options.png = argv[++i].split(",").map(Number).filter(Number.isFinite);
     else if (value === "--no-drift-check") options.driftCheck = false;
     else if (value === "--no-stamps") options.stamps = false;
+    else if (value === "--no-tighten-obstacles") options.tightenObstacles = false;
     // Retain-profile ablations (all on by default in the preset).
     else if (value === "--no-smoothing") options.retainSmoothing = false;
     else if (value === "--no-region-expansion") options.retainRegionExpansion = false;
@@ -180,6 +181,7 @@ print(json.dumps(out))
   const { model, paint, stats, vectors } = buildModel(job, {
     drawings,
     vectorObstacles: Boolean(options.vectorObstacles),
+    tightenObstacles: Boolean(options.tightenObstacles),
     maxPages: options.pages,
     typography: options.typography,
     // retain-pdf's is_body_text_candidate (on with --preset retain / --faithful).
