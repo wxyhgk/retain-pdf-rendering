@@ -6,13 +6,17 @@
   "main": "src/index.js",
   "files": [
     "src",
+    "data",
     "README.md",
     "LICENSE"
   ],
   "scripts": {
     "test": "node --test \"test/*.test.js\"",
     "test:browser": "node --test \"test/browser/*.test.js\"",
-    "test:all": "npm test && npm run test:browser"
+    "test:typst": "node scripts/test-typst-parity.js",
+    "test:all": "npm test && npm run test:browser",
+    "build:advance-table": "node scripts/build-advance-table.js",
+    "build:uax14": "node scripts/build-uax14-table.js"
   },
   "engines": {
     "node": ">=22.8.0"
@@ -22,5 +26,13 @@
     "linebreak": "^1.1.0",
     "mathjax-full": "^3.2.1",
     "playwright": "^1.64.0"
+  },
+  "peerDependencies": {
+    "mathjax-full": "^3.2.1"
+  },
+  "peerDependenciesMeta": {
+    "mathjax-full": {
+      "optional": true
+    }
   }
 }

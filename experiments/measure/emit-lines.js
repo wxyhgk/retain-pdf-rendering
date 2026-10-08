@@ -13,7 +13,10 @@
 // simply extends past the column edge, as it does in Typst).
 
 const { typstString } = require("../typst/content");
-const { layout, lineEndAdjustEm, OBJECT, LINE_SEPARATOR } = require("./linebreak");
+const { lineEndAdjustEm, OBJECT, LINE_SEPARATOR } = require("../../src/text/linebreak");
+const { loadMeasurer } = require("./measurer");
+
+let measurer = null;
 
 function fmt(value) {
   return Number(value).toFixed(3).replace(/\.?0+$/, "") || "0";
@@ -33,7 +36,7 @@ function lineContent(prepared, start, end, maths) {
     if (c === LINE_SEPARATOR) continue;
     if (c !== OBJECT) { text += c; continue; }
     flush();
-    const segment = prepared.boxes.get(i);
+    const segment = prepared.boxes.get(i).run;
     const entry = maths.get(segment.value, false);
     const tex = `$${segment.value}$`;
     pieces.push(entry.ok
@@ -59,14 +62,16 @@ function explicitParagraphStack(node, maths, style) {
   const width = node.contentBox[2] - node.contentBox[0];
   const justify = node.align === "justify";
   const hang = node.hangingIndent ? 1.1 * size : 0;
-  const paragraphs = node.prepared.map(prepared => {
-    const { lines } = layout(prepared, size, width);
+  measurer = measurer || loadMeasurer();
+  const paragraphs = node.prepared.map(({ prepared, options }) => {
+    const { lines } = measurer.layout(prepared, { ...options, fontSize: size, width });
+    const indentPt = Number(options.firstLineIndent) || 0;
     const blocks = lines.map((line, index) => {
       const last = index === lines.length - 1;
-      const forced = prepared.text[line.end - 1] === LINE_SEPARATOR || line.end === prepared.n;
+      const forced = line.forced;
       let end = line.end;
       if (!forced) while (end > line.start && isSpace(prepared.text[end - 1])) end -= 1;
-      const indent = index === 0 && prepared.indentPt > 0 ? `#h(${fmt(prepared.indentPt)}pt)` : "";
+      const indent = index === 0 && indentPt > 0 ? `#h(${fmt(indentPt)}pt)` : "";
       const body = lineContent(prepared, line.start, end, maths);
       const lineWidth = index === 0 ? width : width - hang;
       // Justify every line that Typst would justify: not the last one, not

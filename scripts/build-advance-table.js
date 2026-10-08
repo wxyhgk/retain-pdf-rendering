@@ -5,12 +5,12 @@
 // JSON table, so runtimes (plugin, retain-pdf, browser) need neither the
 // 23 MB OTF nor a font parser.
 //
-// node experiments/measure/build-advance-table.js [font.otf] [out.json]
+// node scripts/build-advance-table.js [font.otf] [out.json]
 //
 // Contents (units of unitsPerEm):
 //   ranges     advance of every cmap code point (default shaping), as
 //              [first, count, advance] runs — CJK compresses to a few runs
-//   modes.zh   / modes.dflt (see font-metrics.js for the two shaping modes):
+//   modes.zh   / modes.dflt (see src/text/metrics.js for the two shaping modes):
 //     advances   code points whose advance differs from `ranges` in that mode
 //     kern       { left: [right, delta, right, delta, ...] } pair deltas
 //                (GPOS kerning and contextual substitutions)
@@ -25,8 +25,8 @@ const crypto = require("node:crypto");
 const zlib = require("node:zlib");
 const fontkit = require("fontkit");
 
-const FONT = process.argv[2] || path.resolve(__dirname, "../../../retain-pdf/resources/fonts/SourceHanSerifSC-Regular.otf");
-const OUT = process.argv[3] || path.resolve(__dirname, "data/source-han-serif-sc-regular.json");
+const FONT = process.argv[2] || path.resolve(__dirname, "../../retain-pdf/resources/fonts/SourceHanSerifSC-Regular.otf");
+const OUT = process.argv[3] || path.resolve(__dirname, "../data/fonts/source-han-serif-sc-regular.json");
 
 const PAIR_BLOCKS = [
   [0x20, 0x7e], [0xa0, 0xff], [0x100, 0x17f],            // Latin
@@ -93,6 +93,8 @@ function main() {
     unitsPerEm: font.unitsPerEm,
     ascender: os2.typoAscender,
     descender: os2.typoDescender,
+    capHeight: os2.capHeight,
+    xHeight: os2.xHeight,
     defaultAdvance: font.unitsPerEm,
     repertoire: PAIR_BLOCKS,
     ranges,

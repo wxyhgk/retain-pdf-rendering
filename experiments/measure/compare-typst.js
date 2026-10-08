@@ -3,7 +3,11 @@
 
 // Parity: our JS line layout vs Typst's own `linebreaks: "simple"` layout.
 //
-// node experiments/measure/compare-typst.js [--sizes 7,8.5,10,11.5] [--out DIR] [--verbose]
+// node experiments/measure/compare-typst.js [--sizes 7,8.5,10,11.5] [--out DIR] [--verbose] [--export FILE]
+//
+// --export FILE writes every probe as self-contained measurer input (content
+// runs with formula box sizes) plus Typst's lines, for the Typst-free parity
+// test in test/text.test.js (test/fixtures/text-parity/typst-lines.json).
 //
 // Every paragraph of every golden fixture (source and translation modes, plus
 // the demo inline-math sentences) is laid out at several font sizes in its
@@ -17,12 +21,11 @@ const { spawnSync } = require("node:child_process");
 const { pageNodes } = require("../typst/content");
 const { PREAMBLE, MathStore, FONT_FAMILY } = require("../typst/emit");
 const typst = require("../typst/typst");
-const { FontMetrics } = require("./font-metrics");
-const { prepare, layout, OBJECT, LINE_SEPARATOR } = require("./linebreak");
-const { mathSegments, DEMO_SENTENCES, FALLBACK_BOX } = require("./shared");
+const { OBJECT, LINE_SEPARATOR } = require("../../src/text/linebreak");
+const { loadMeasurer, contentRuns } = require("./measurer");
+const { mathSegments, DEMO_SENTENCES } = require("./shared");
 
 const PYTHON = process.env.RPR_PYTHON || path.resolve(__dirname, "../../../retain-pdf/backend/.venv/bin/python");
-const FONT = path.join(typst.FONT_DIR, "SourceHanSerifSC-Regular.otf");
 
 function parseArgs(argv) {
   const options = { sizes: [7, 8.5, 10, 11.5], out: path.resolve(__dirname, "output/compare"), verbose: false, table: "" };
@@ -32,6 +35,8 @@ function parseArgs(argv) {
     else if (argv[i] === "--verbose") options.verbose = true;
     else if (argv[i] === "--table") options.table = path.resolve(argv[++i]);
     else if (argv[i] === "--only") options.only = argv[++i];
+    else if (argv[i] === "--export") options.export = path.resolve(argv[++i]);
+    else if (argv[i] === "--extra") options.extra = path.resolve(argv[++i]);
   }
   return options;
 }
@@ -137,33 +142,21 @@ function inlineTypst(segments, maths) {
   return pieces.length ? `[#${pieces.join("#")}]` : "[]";
 }
 
-// Inline formula boxes for our layout (same sizes the emitter gives Typst).
-function measuredSegments(segments, maths) {
-  return segments.map(segment => {
-    if (segment.type !== "math") return segment;
-    const entry = maths.get(segment.value, false);
-    const tex = `$${segment.value}$`;
-    if (!entry.ok) return { type: "math", tex, ...FALLBACK_BOX(tex) };
-    return { type: "math", tex, widthEm: Number(fmt(entry.widthEm)), heightEm: Number(fmt(entry.heightEm)), depthEm: Number(fmt(entry.depthEm)) };
-  });
-}
-
 function normalize(text) {
   return text.replace(/[\s\u2028]+/g, "");
 }
 
-function ourLines(probe, metrics, maths) {
-  const segments = measuredSegments(probe.paragraph.segments, maths);
-  const prepared = prepare(segments, metrics, { indentPt: probe.hanging ? 0 : probe.paragraph.indent, hangingIndentEm: probe.hanging ? 1.1 : 0 });
-  const result = layout(prepared, probe.size, probe.width);
-  const maths$ = [];
-  segments.forEach(segment => { if (segment.type === "math") maths$.push(segment.tex); });
-  let mathIndex = 0;
-  const mathAt = new Map();
-  for (let i = 0; i < prepared.text.length; i++) if (prepared.text[i] === OBJECT) mathAt.set(i, maths$[mathIndex++]);
+function probeLayout(probe, measurer, maths) {
+  const prepared = measurer.prepare(contentRuns(probe.paragraph.segments, maths));
+  const options = probe.hanging ? { hangingIndentEm: 1.1 } : { firstLineIndent: probe.paragraph.indent };
+  return { prepared, result: measurer.layout(prepared, { ...options, fontSize: probe.size, width: probe.width }) };
+}
+
+function ourLines(probe, measurer, maths) {
+  const { prepared, result } = probeLayout(probe, measurer, maths);
   return result.lines.map(line => {
     let out = "";
-    for (let i = line.start; i < line.end; i++) out += prepared.text[i] === OBJECT ? mathAt.get(i) : prepared.text[i];
+    for (let i = line.start; i < line.end; i++) out += prepared.text[i] === OBJECT ? prepared.boxes.get(i).run.tex : prepared.text[i];
     return normalize(out);
   }).filter(Boolean);
 }
@@ -214,20 +207,23 @@ function main() {
   const options = parseArgs(process.argv.slice(2));
   fs.rmSync(options.out, { recursive: true, force: true });
   fs.mkdirSync(options.out, { recursive: true });
-  const metrics = options.table
-    ? FontMetrics.fromTable(JSON.parse(fs.readFileSync(options.table, "utf8")))
-    : FontMetrics.fromFont(FONT);
+  const measurer = options.table ? loadMeasurer(options.table) : loadMeasurer();
   const maths = new MathStore(options.out);
   let probes = collectProbes(options.sizes);
+  // --extra FILE: [{ name, text, width, size, indent?, hanging? }] targeted probes.
+  if (options.extra) {
+    const extra = JSON.parse(fs.readFileSync(options.extra, "utf8"));
+    if (process.argv.includes("--extra-only")) probes = [];
+    for (const item of extra) {
+      probes.push({ fixture: "extra", mode: "translation", node: item.name, para: 0, paragraph: { indent: item.indent || 0, segments: mathSegments(item.text) }, width: item.width, size: item.size || 10, justify: false, hanging: Boolean(item.hanging) });
+    }
+  }
   if (options.only) {
     probes = probes.filter(p => p.node === options.only);
     for (const probe of probes) {
-      const segments = measuredSegments(probe.paragraph.segments, maths);
-      const prepared = prepare(segments, metrics, { indentPt: probe.hanging ? 0 : probe.paragraph.indent, hangingIndentEm: probe.hanging ? 1.1 : 0 });
-      const result = layout(prepared, probe.size, probe.width);
+      const { prepared, result } = probeLayout(probe, measurer, maths);
       console.log(`size ${probe.size} width ${probe.width} indent ${probe.paragraph.indent} hanging ${probe.hanging}`);
-      console.log("breaks", prepared.breaks.map(b => `${b.position}${b.mandatory ? "!" : ""}`).join(" "));
-      for (const line of result.lines) console.log(`  [${line.start},${line.end}) ${line.widthPt.toFixed(2)} ${JSON.stringify(prepared.text.slice(line.start, line.end))}`);
+      for (const line of result.lines) console.log(`  [${line.start},${line.end}) ${line.width.toFixed(2)} ${JSON.stringify(prepared.text.slice(line.start, line.end))}`);
     }
   }
   fs.writeFileSync(path.join(options.out, "probes.typ"), typstDocument(probes, maths));
@@ -237,7 +233,7 @@ function main() {
 
   const results = probes.map((probe, index) => {
     const theirs = typstPages[index].map(normalize).filter(Boolean);
-    const ours = ourLines(probe, metrics, maths);
+    const ours = ourLines(probe, measurer, maths);
     // Compare lines as character multisets: PyMuPDF splits ligature glyphs
     // (fi, fl) into characters whose x order is not reliable.
     const bag = line => [...line].sort().join("");
@@ -257,7 +253,7 @@ function main() {
     sameLineCount: lineCount,
     lineCountRate: Number((lineCount / results.length).toFixed(4)),
     extractionTextMismatch: textMismatch,
-    metricsSource: options.table ? "table" : "font"
+    metricsSource: options.table || "data/fonts (default table)"
   };
   const mismatches = results.filter(r => !r.exact).map(r => {
     let firstDiff = 0;
@@ -270,6 +266,33 @@ function main() {
     };
   });
   fs.writeFileSync(path.join(options.out, "parity.json"), JSON.stringify({ summary, mismatches }, null, 2));
+  if (options.export) {
+    // One entry per paragraph; Typst's result per size as the character
+    // count of each (whitespace-stripped) line — the text is the same in
+    // both layouts (checked above), so the counts pin the break positions.
+    const paragraphs = new Map();
+    probes.forEach((probe, index) => {
+      const key = `${probe.fixture}|${probe.mode}|${probe.node}|${probe.para}|${probe.width}|${JSON.stringify([probe.paragraph.segments, probe.paragraph.indent, probe.hanging])}`;
+      if (!paragraphs.has(key)) {
+        paragraphs.set(key, {
+          id: `${probe.fixture}|${probe.mode}|${probe.node}|${probe.para}`,
+          content: contentRuns(probe.paragraph.segments, maths).map(({ value, ...run }) => run),
+          options: probe.hanging ? { hangingIndentEm: 1.1 } : { firstLineIndent: probe.paragraph.indent },
+          width: probe.width,
+          typst: {}
+        });
+      }
+      paragraphs.get(key).typst[probe.size] = typstPages[index].map(normalize).filter(Boolean).map(line => [...line].length);
+    });
+    fs.mkdirSync(path.dirname(options.export), { recursive: true });
+    fs.writeFileSync(options.export, JSON.stringify({
+      generator: "node experiments/measure/compare-typst.js --export test/fixtures/text-parity/typst-lines.json",
+      typst: typst.version(),
+      font: "data/fonts/source-han-serif-sc-regular.json",
+      summary,
+      paragraphs: [...paragraphs.values()]
+    }) + "\n");
+  }
   console.log(JSON.stringify(summary, null, 2));
   if (options.verbose) for (const m of mismatches.slice(0, 40)) console.log(JSON.stringify(m));
 }
