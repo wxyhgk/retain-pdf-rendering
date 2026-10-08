@@ -37,6 +37,9 @@ function parseArgs(argv) {
     else if (value === "--body-max-factor") options.bodyMaxFactor = Number(argv[++i]);
     else if (value === "--allow-spill") options.strictSourceFit = false;
     else if (value === "--body-line-height") options.bodyLineHeight = Number(argv[++i]);
+    else if (value === "--typography") options.typography = argv[++i];
+    else if (value === "--seed") options.seed = argv[++i];
+    else if (value === "--retain-band-fit") options.retainBandFit = true;
     else if (value === "--font-caps") options.fontCaps = true;
     else if (value === "--no-font-caps") options.fontCaps = false;
     else if (!options.job) options.job = value;
@@ -110,6 +113,8 @@ print(json.dumps(out))
   started = performance.now();
   const { model, paint, stats } = buildModel(job, {
     maxPages: options.pages,
+    typography: options.typography,
+    seed: options.seed,
     sourceSizes,
     inheritBelow: options.inheritBelow,
     bodyLineHeight: options.bodyLineHeight,
@@ -136,7 +141,8 @@ print(json.dumps(out))
     }
     return defaults(node, mode);
   };
-  const fitter = FitModel.createModelFitter({ measurer, lineModel: "measurer", contentFor });
+  const retain = options.typography === "retain";
+  const fitter = FitModel.createModelFitter({ measurer, lineModel: "measurer", contentFor, ...(retain ? { typography: "retain" } : {}) });
   started = performance.now();
   const mathBefore = maths.stats.ms;
   // The shared body font stops at the first paragraph that cannot grow
@@ -148,10 +154,10 @@ print(json.dumps(out))
   // strictSourceFit: text must stay inside its own source box. The overlay
   // cannot see vector rules or frames that are not OCR blocks, so growing
   // into "free" space below a box is not safe here.
-  const fitOptions = { mode: "translation", bodyMaxFont, strictSourceFit: options.strictSourceFit, bodyNodeFontCaps: Boolean(options.fontCaps) };
+  const fitOptions = { mode: "translation", bodyMaxFont, strictSourceFit: options.strictSourceFit, bodyNodeFontCaps: Boolean(options.fontCaps), ...(options.retainBandFit ? { retainBandFit: true } : {}) };
   let fitted = fitter.fitDocument(model, fitOptions);
   const limiterRounds = [];
-  for (let round = 0; round < options.limiterRounds; round++) {
+  for (let round = 0; round < (retain ? 0 : options.limiterRounds); round++) {
     const body = fitted.pages.flatMap(page => page.nodes)
       .filter(node => node.kind === "stream" && node.styleKind === "body_text" && node.textRects.length);
     // Collision stop: the fitter names the limiter. Overflow stop (strict
@@ -335,6 +341,14 @@ for n in pages:
     drift: drift && { nodes: drift.nodes, mismatch: drift.mismatch.length, examples: drift.mismatch.slice(0, 5) },
     formulas: { rendered: maths.stats.formulas, failed: maths.stats.failed.length, failedExamples: maths.stats.failed.slice(0, 5), copiedOutOfPdf: [...text.matchAll(/\$[^$\n]{1,80}\$/g)].length },
     bodyFont: { ours: summary(bodyOurs), retainPdf: summary(bodyRef), oursIndividual: summary(comparisons.filter(c => c.kind === "text").map(c => c.ours)) },
+    // Fill of each painted body paragraph: ink height over its box height.
+    bodyFill: (() => {
+      const fills = fitted.pages.flatMap(page => page.nodes)
+        .filter(node => paint[node.id] && node.styleKind === "body_text" && node.textRects.length)
+        .map(node => (Math.max(...node.textRects.map(rect => rect.bottom)) - Math.min(...node.textRects.map(rect => rect.top))) / Math.max(1, node.bbox[3] - node.bbox[1]));
+      const sorted = fills.slice().sort((a, b) => a - b);
+      return { count: fills.length, below60: fills.filter(fill => fill < 0.6).length, median: sorted.length ? Number(sorted[sorted.length >> 1].toFixed(3)) : null };
+    })(),
     fontSizes: comparisons
   };
   fs.writeFileSync(path.join(options.out, "report.json"), JSON.stringify(report, null, 2));

@@ -9,6 +9,7 @@ package's pure-JS measurer and data-driven fitter instead of Typst
 node experiments/overlay/run.js <retain-pdf job dir> [--png 1,2,5] [--out DIR]
      [--no-drift-check] [--pages N] [--limiter-rounds N] [--body-max-factor F]
      [--body-line-height R] [--inherit-below F] [--allow-spill] [--no-font-caps]
+     [--typography retain [--seed geometry] [--retain-band-fit]]
 ```
 
 The job directory is only read. Output (gitignored) goes to
@@ -155,3 +156,21 @@ the node above is repaired (a tighter line ratio cannot lift the first line of
 the lower one: OCR boxes of tightly set paragraphs overlap by a fraction of a
 point). That second fix is verified on these real jobs only; a synthetic unit
 test could not reproduce the overlapping-box case yet.
+
+## `--typography retain`
+
+Fits with the fitter's "retain" typography profile (src/fit-model/README.md):
+retain-pdf's body size and leading rules plus our ink collision safety net.
+The adapter then keeps every paragraph's own seed (no source-size clamp, no
+detach rounds) and hands the fitter each block's source line pitch (text-layer
+line spacing, else OCR line centres).
+
+- `--seed geometry` ignores the PDF text layer and seeds sizes the way
+  retain-pdf does, from OCR line boxes of the translation payload items
+  (glyph height x 0.98 x 0.9215, page baseline from candidates with >= 3 lines,
+  >= 40 characters, >= 0.6 x the page's median text width).
+- `--retain-band-fit` additionally keeps each body paragraph's Typst band
+  inside its box.
+
+`report.json` gains `bodyFill` (ink height / box height per painted body
+paragraph: count below 0.6, median).

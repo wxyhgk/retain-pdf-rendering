@@ -64,6 +64,7 @@ function parseArgs(argv) {
     else if (value === "--out") options.out = argv[++i];
     else if (value === "--measurer") options.measurer = argv[++i];
     else if (value === "--fitter") options.fitter = argv[++i];
+    else if (value === "--typography") options.typography = argv[++i];
     else if (value === "--no-png") options.noPng = true;
     else if (value === "--no-drift-check") options.noDriftCheck = true;
     else if (!options.fixture) options.fixture = value;
@@ -324,6 +325,7 @@ function runModelFitter({ options, fixture, model, mode, out, maths, nodesByPage
     return Text.fallbackMathBox(display ? `$$${tex}$$` : `$${tex}$`);
   };
   const fitter = FitModel.createModelFitter({
+    ...(options.typography === "retain" ? { typography: "retain" } : {}),
     measurer,
     lineModel: "measurer",
     contentFor: FitModel.defaultContentFor({ renderMathBox })

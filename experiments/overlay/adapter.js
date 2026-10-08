@@ -101,6 +101,44 @@ function seedFontSize(block, bbox, sizes, lineCount) {
   return { size: Number(Math.min(lineCount > 1 ? pitch / 1.2 : pitch / 1.25, 12).toFixed(2)), from: "ocr" };
 }
 
+// Source line pitch inside bbox from the PDF text layer: span centres grouped
+// into lines (2 pt), median distance between consecutive lines. 0 when the
+// block has fewer than two text-layer lines.
+function sourceLinePitch(bbox, spans) {
+  const ys = (spans || []).filter(span => {
+    const cx = (span.bbox[0] + span.bbox[2]) / 2;
+    const cy = (span.bbox[1] + span.bbox[3]) / 2;
+    return cx >= bbox[0] && cx <= bbox[2] && cy >= bbox[1] && cy <= bbox[3];
+  }).map(span => span.bbox[3]).sort((a, b) => a - b);
+  const lines = [];
+  for (const y of ys) if (!lines.length || y - lines[lines.length - 1] > 2) lines.push(y);
+  if (lines.length < 2) return 0;
+  return median(lines.slice(1).map((y, i) => y - lines[i]), 0);
+}
+
+// retain-pdf's geometry-only size estimate (typography/line_metrics.py,
+// baseline.py, font_size_fit.py), the fallback for PDFs without a text layer.
+// Like retain-pdf it reads the translation payload item's line boxes (else
+// the document.v1 block's): glyph height = median line height, pitch =
+// median distance between consecutive line centres.
+function ocrLineGeometry(block, item = null) {
+  const source = item && Array.isArray(item.lines) && item.lines.length ? item.lines : (Array.isArray(block.lines) ? block.lines : []);
+  const lines = source.filter(line => Array.isArray(line.bbox) && line.bbox[3] > line.bbox[1]);
+  const heights = lines.map(line => line.bbox[3] - line.bbox[1]);
+  const centers = lines.map(line => (line.bbox[1] + line.bbox[3]) / 2);
+  const diffs = centers.slice(1).map((y, i) => y - centers[i]).filter(diff => diff > 0);
+  return { glyphHeight: median(heights, 0), pitch: diffs.length ? median(diffs, 0) : 0, lines: lines.length };
+}
+
+// typography/baseline.candidate_text_items: page-baseline candidates.
+function isBaselineCandidate(block, item, widthMed) {
+  if (block.type !== "text" || /caption|footnote/.test(String(block.sub_type || ""))) return false;
+  const geometry = ocrLineGeometry(block, item);
+  const text = String(item?.source_text || block.text || "").replace(/\s+/g, "");
+  const width = block.bbox[2] - block.bbox[0];
+  return geometry.lines >= 3 && text.length >= 40 && !(widthMed > 0 && width < widthMed * 0.6);
+}
+
 // Returns { model, paint } where paint[nodeId] = { cover, fill, text } for
 // the emitter (cover = rectangle to fill, colours as 0..1 rgb arrays).
 function buildModel(job, options = {}) {
@@ -110,8 +148,23 @@ function buildModel(job, options = {}) {
   const sourceSizes = options.sourceSizes || {};
   const bodyStreams = [];
   const maxPages = Number.isFinite(options.maxPages) ? options.maxPages : Infinity;
+  const retain = options.typography === "retain";
+  const Retain = retain ? require("../../src/fit-model/typography-retain.js") : null;
   for (const page of job.document.pages.slice(0, maxPages)) {
     const pageIndex = Number(page.page_index);
+    const pageSpans = options.seed === "geometry" ? [] : sourceSizes[String(pageIndex)];
+    let pageGeometry = null;
+    if (retain && options.seed === "geometry") {
+      const itemOf = block => job.translations.get(`${pageIndex}:${blockNumber(String(block.block_id))}`);
+      const textBlocks = (page.blocks || []).filter(block => block.type === "text" && !/caption|footnote/.test(String(block.sub_type || "")));
+      const widthMed = median(textBlocks.map(block => block.bbox[2] - block.bbox[0]), 0);
+      const candidates = textBlocks.filter(block => isBaselineCandidate(block, itemOf(block), widthMed)).map(block => ocrLineGeometry(block, itemOf(block)));
+      // percentile_value(..., 0.42) of pitches; the font metric per candidate
+      // is its glyph height (local_font_metric).
+      const pitches = candidates.map(entry => entry.pitch).filter(value => value > 0).sort((a, b) => a - b);
+      const pagePitch = pitches.length ? pitches[Math.floor((pitches.length - 1) * 0.42)] : 0;
+      pageGeometry = { pagePitch, pageFont: Retain.pageBaselineFontSize(candidates.map(entry => entry.glyphHeight), candidates.map(entry => entry.pitch)) };
+    }
     const profilePage = job.profile.pages?.[String(pageIndex)] || {};
     const streams = [];
     const absoluteBlocks = [];
@@ -124,7 +177,14 @@ function buildModel(job, options = {}) {
       const translated = block.type === "text" ? translationOf(item) : "";
       const subType = String(block.sub_type || "");
       const lineCount = Math.max(1, Array.isArray(block.lines) ? block.lines.length : 1);
-      const seed = seedFontSize(block, bbox, sourceSizes[String(pageIndex)], lineCount);
+      let seed = seedFontSize(block, bbox, pageSpans, lineCount);
+      if (pageGeometry && pageGeometry.pageFont > 0) {
+        const local = ocrLineGeometry(block, item);
+        const size = Retain.geometryBodyFontSize({ ...local, pagePitch: pageGeometry.pagePitch, pageFont: pageGeometry.pageFont });
+        if (size > 0) seed = { size, from: "geometry" };
+      }
+      const pitchFromPdf = retain ? sourceLinePitch(bbox, pageSpans) : 0;
+      const pitchFromOcr = retain && !(pitchFromPdf > 0) ? ocrLineGeometry(block, item).pitch : 0;
       if (!translated) {
         if (block.type === "text" && item && item.policy_translate) stats.untranslatedText += 1;
         absoluteBlocks.push({ id, type: "image", kind: "image", bbox, sourceOnly: true });
@@ -138,7 +198,9 @@ function buildModel(job, options = {}) {
         text: visual?.text_rgb || [0.07, 0.07, 0.07]
       };
       blocks.push({ id, translatable: true, translatedText: translated });
-      if (seed.from === "pdf") stats.seedsFromPdf += 1; else stats.seedsFromOcr += 1;
+      if (seed.from === "pdf") stats.seedsFromPdf += 1;
+      else if (seed.from === "geometry") stats.seedsFromGeometry = (stats.seedsFromGeometry || 0) + 1;
+      else stats.seedsFromOcr += 1;
       const sourceText = String(item.source_text || block.text || "");
       if (subType === "body") {
         // Source body text: the line pitch is ~1.2 x the font size.
@@ -153,6 +215,7 @@ function buildModel(job, options = {}) {
           columnKey: String(block.metadata?.provider_column_index_guess || ""),
           items: [{ id, text: sourceText, translatedText: translated, originalLineCount: lineCount }]
         };
+        if (retain) stream.sourceLinePitch = pitchFromPdf || pitchFromOcr || 0;
         streams.push(stream);
         bodyStreams.push(stream);
         stats.streams += 1;
@@ -174,7 +237,8 @@ function buildModel(job, options = {}) {
         translatable: true,
         mainTitle: subType === "title",
         fontSize: seed.size,
-        lineCount
+        lineCount,
+        ...(retain ? { sourceLinePitch: pitchFromPdf || pitchFromOcr || 0 } : {})
       });
     }
     pages.push({
@@ -191,7 +255,9 @@ function buildModel(job, options = {}) {
   const sourceBodyFont = median(bodyStreams.map(stream => stream.fontSize), NaN);
   if (Number.isFinite(sourceBodyFont)) {
     stats.sourceBodyFont = Number(sourceBodyFont.toFixed(2));
-    for (const stream of bodyStreams) stream.fontSize = Math.min(stream.fontSize, stats.sourceBodyFont);
+    // The retain profile keeps every paragraph's own seed (retain-pdf has no
+    // source-size ceiling; its unify and underfill rules decide).
+    if (!retain) for (const stream of bodyStreams) stream.fontSize = Math.min(stream.fontSize, stats.sourceBodyFont);
   }
   // The fitter shares one body font across the document and never lets a
   // body paragraph shrink on its own. OCR boxes that are much tighter than
@@ -199,7 +265,7 @@ function buildModel(job, options = {}) {
   // formulas) would drag every page down, so they leave the shared group and
   // become individually fitted text blocks (see detachBody).
   const model = { pages };
-  if (typeof options.standaloneFit === "function" && bodyStreams.length) {
+  if (!retain && typeof options.standaloneFit === "function" && bodyStreams.length) {
     const fits = bodyStreams.map(stream => options.standaloneFit(stream));
     const typical = median(fits, NaN);
     const floor = typical * (options.inheritBelow ?? 0.85);
