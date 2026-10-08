@@ -103,3 +103,15 @@ RPR_TEST_FONT=/path/SourceHanSerifCN-Regular.ttf \
 1. 把"测量"抽成接口：`src/fit.js` 的分组/共享字号/行距回退逻辑保持不变，测量后端可选浏览器或 Typst，并用 `compare-lines.js` 这类对比测试守住一致性。
 2. 测量改成粗细两轮或进程内 typst.ts，目标 3 页 < 300 ms。
 3. 输出端直接用 Typst 生成译文 PDF，替换插件里的 `print()` 路径；retain-pdf 也可以共用这套 Typst 生成与公式方案，摆脱 mitex。
+
+## Update: JS measurer
+
+`run.js --measurer js` replaces the Typst measurement query with the pure-JS
+line layout in `experiments/measure` (see its README: 100 % line-break parity
+with Typst, 300 pages measured in ~6 s instead of ~111 s) and emits those line
+breaks explicitly. `--measurer both` runs both and compares them.
+
+Fix found while doing so: in Typst ≥ 0.13 inline content alone in a `block` is
+not a paragraph and ignores `hanging-indent`, so reference entries measured
+alone had no hanging indent while the output (entries joined by `parbreak()`)
+had one. Every paragraph is now wrapped in `par[...]` in both documents.
