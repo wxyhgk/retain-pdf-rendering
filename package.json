@@ -1,0 +1,9 @@
+{
+  "name": "retain-pdf-rendering",
+  "version": "0.1.0",
+  "description": "Layout restoration, DOM rendering and glyph-measured fitting for translated PDF pages built from MinerU layout output.",
+  "license": "MIT",
+  "main": "src/index.js",
+  "files": ["src", "README.md", "LICENSE"],
+  "engines": { "node": ">=22.8.0" }
+}
