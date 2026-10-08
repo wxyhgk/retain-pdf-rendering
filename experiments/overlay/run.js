@@ -27,7 +27,7 @@ const PYTHON = process.env.RPR_PYTHON || path.resolve(__dirname, "../../../retai
 // `--preset retain`: the full retain-pdf-style configuration in one flag.
 // Flags given after it override individual settings.
 const PRESETS = {
-  retain: { typography: "retain", seed: "geometry" }
+  retain: { typography: "retain", seed: "geometry", vectorObstacles: true }
 };
 
 function parseArgs(argv) {
@@ -53,6 +53,8 @@ function parseArgs(argv) {
     else if (value === "--retain-band-fit") options.retainBandFit = true;
     else if (value === "--font-caps") options.fontCaps = true;
     else if (value === "--no-font-caps") options.fontCaps = false;
+    else if (value === "--vector-obstacles") options.vectorObstacles = true;
+    else if (value === "--no-vector-obstacles") options.vectorObstacles = false;
     else if (!options.job) options.job = value;
   }
   if (!options.job) throw new Error("usage: run.js <jobDir> [--out DIR] [--pages N] [--png 1,3] [--no-drift-check]");
@@ -121,7 +123,10 @@ print(json.dumps(out))
   const runsForText = text => Text.contentFromText(text, { renderMathBox })
     .map(run => (run.type === "math" ? { ...run, display: false } : run));
   started = performance.now();
-  const { model, paint, stats } = buildModel(job, {
+  const drawings = job.sourcePdf ? require("./vector-obstacles").extractDrawings(job.sourcePdf) : null;
+  const { model, paint, stats, vectors } = buildModel(job, {
+    drawings,
+    vectorObstacles: Boolean(options.vectorObstacles),
     maxPages: options.pages,
     typography: options.typography,
     seed: options.seed,
@@ -231,6 +236,7 @@ print(json.dumps(out))
   // Invariants on the fitted output: text vs text (output-path helper) and
   // text vs every preserved source element (obstacle boxes).
   const violations = outputViolations(fitted);
+  const vectorHitList = require("./vector-obstacles").vectorHits(fitted, vectors, paint);
   const isObstacle = label => /^block:image#/.test(label);
   const textOrder = violations.order.filter(entry => !isObstacle(entry.upper) && !isObstacle(entry.lower));
   // Painted text that runs past its own source box (allowed by the fitter's
@@ -346,6 +352,12 @@ for n in pages:
     // exact rectangle test obstacleHits (the order check compares vertical
     // extents of whole nodes and flags text beside, not over, a formula).
     invariants: { lineOverlaps: violations.lineOverlaps.length, outside: violations.outside.length, order: textOrder.length, obstacleHits: obstacleHits.length },
+    vectorHits: {
+      lines: vectorHitList.length,
+      overflowLines: vectorHitList.filter(hit => hit.overflowLine).length,
+      byKind: vectorHitList.reduce((acc, hit) => ({ ...acc, [hit.kind]: (acc[hit.kind] || 0) + 1 }), {}),
+      examples: vectorHitList.slice(0, 8)
+    },
     spillBelowBox: { count: spills.length, over2pt: spills.filter(entry => entry.by > 2).length, examples: spills.sort((a, b) => b.by - a.by).slice(0, 5) },
     examples: { lineOverlaps: violations.lineOverlaps.slice(0, 5), outside: violations.outside.slice(0, 5), order: textOrder.slice(0, 5), obstacleHits: obstacleHits.slice(0, 8) },
     drift: drift && { nodes: drift.nodes, mismatch: drift.mismatch.length, examples: drift.mismatch.slice(0, 5) },
