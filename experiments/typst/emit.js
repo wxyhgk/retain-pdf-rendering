@@ -243,4 +243,4 @@ function outputDocument(pages, nodesByPage, styles, maths, options = {}) {
   return lines.join("\n") + "\n";
 }
 
-module.exports = { PREAMBLE, MathStore, measureDocument, outputDocument, paragraphStack, FONT_FAMILY };
+module.exports = { PREAMBLE, MathStore, measureDocument, outputDocument, paragraphStack, FONT_FAMILY, placed, tableBlock, codeBlock };

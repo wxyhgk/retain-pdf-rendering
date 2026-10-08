@@ -2,7 +2,11 @@
 "use strict";
 
 // node experiments/typst/run.js <fixture> [--mode translation|source] [--demo-inline-math] [--out DIR]
-//                               [--measurer typst|js|both]
+//                               [--measurer typst|js|both] [--fitter prototype|model]
+//
+// --fitter model   fit with src/fit-model.js (the DOM fitter's rule set on
+//                  data, JS measurer) and emit every line at the position it
+//                  computed (emit-model.js); --measurer is then always js
 //
 // --measurer js    pure-JS line layout (experiments/measure) instead of a Typst
 //                  query; the output then emits exactly those line breaks
@@ -21,6 +25,8 @@ const { solveStyles, sizesFor } = require("./fit");
 const typst = require("./typst");
 const jsMeasurer = require("../measure/measurer");
 const { explicitParagraphStack } = require("../measure/emit-lines");
+const emitters = require("./emit");
+const { fittedDocument, flatten } = require("./emit-model");
 
 // JS vs Typst measurements of the same (node, paragraph, size).
 function compareMeasurements(js, viaTypst) {
@@ -50,13 +56,14 @@ function compareMeasurements(js, viaTypst) {
 const PYTHON = process.env.RPR_PYTHON || path.resolve(__dirname, "../../../retain-pdf/backend/.venv/bin/python");
 
 function parseArgs(argv) {
-  const options = { fixture: "", mode: "", demoInlineMath: false, out: "", measurer: "typst", noPng: false };
+  const options = { fixture: "", mode: "", demoInlineMath: false, out: "", measurer: "typst", noPng: false, fitter: "prototype" };
   for (let i = 0; i < argv.length; i++) {
     const value = argv[i];
     if (value === "--mode") options.mode = argv[++i];
     else if (value === "--demo-inline-math") options.demoInlineMath = true;
     else if (value === "--out") options.out = argv[++i];
     else if (value === "--measurer") options.measurer = argv[++i];
+    else if (value === "--fitter") options.fitter = argv[++i];
     else if (value === "--no-png") options.noPng = true;
     else if (value === "--no-drift-check") options.noDriftCheck = true;
     else if (!options.fixture) options.fixture = value;
@@ -133,6 +140,7 @@ function main() {
   nodesByPage.forEach((nodes, pageIndex) => nodes.forEach((node, index) => {
     node.uid = `p${pageIndex + 1}-${index}`;
   }));
+  if (options.fitter === "model") return runModelFitter({ options, fixture, model, mode, out, maths, nodesByPage, injected });
 
   // 1. One batched measurement of every text node over its size ladder.
   let started = performance.now();
@@ -279,6 +287,125 @@ open(f"{sys.argv[2]}/text.txt", "w").write("\\n\\f\\n".join(texts))
   };
   fs.writeFileSync(path.join(out, "report.json"), JSON.stringify(report, null, 2));
   console.log(JSON.stringify({ out, measurer: options.measurer, measureComparison, drift, timings, invocations: typst.invocations.length, measurements: report.measurements, decisions, conflicts: conflicts.length, formulasFailed: maths.stats.failed.length, formulasCopied: formulasInText.length }, null, 2));
+}
+
+function driftCheck(out, expected) {
+  fs.writeFileSync(path.join(out, "expected-lines.json"), JSON.stringify(expected));
+  const check = spawnSync(PYTHON, ["-c", `
+import fitz, sys, json
+doc = fitz.open(sys.argv[1])
+expected = json.load(open(sys.argv[2]))
+bad = []
+for e in expected:
+    page = doc[e["page"]]
+    baselines = []
+    for b in page.get_text("rawdict")["blocks"]:
+        for l in b.get("lines", []):
+            for sp in l["spans"]:
+                if sp["alpha"] == 0 or sp["size"] < e["size"] * 0.75:
+                    continue
+                for ch in sp["chars"]:
+                    x, y = ch["origin"]
+                    if e["x0"] - 1 <= x <= e["x1"] + 1 and e["y0"] - 0.5 <= y <= e["y1"] + 0.5:
+                        baselines.append(y)
+    baselines.sort()
+    rows = []
+    for y in baselines:
+        if not rows or y - rows[-1] > e["size"] * 0.5:
+            rows.append(y)
+    if len(rows) != e["lines"]:
+        bad.append({"key": e["key"], "page": e["page"] + 1, "expected": e["lines"], "rendered": len(rows)})
+print(json.dumps({"nodes": len(expected), "mismatch": bad}))
+`, path.join(out, "doc.pdf"), path.join(out, "expected-lines.json")], { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
+  return check.status === 0 ? JSON.parse(check.stdout) : { error: check.stderr };
+}
+
+// --fitter model: src/fit-model.js + the experimental JS measurer (Typst
+// spacing profile, since Typst draws the result), lines emitted as placed.
+function runModelFitter({ options, fixture, model, mode, out, maths, nodesByPage, injected }) {
+  const FitModel = require("../../src/fit-model.js");
+  const { createMeasurer } = require("../../test/helpers/experimental-measurer");
+  const { FALLBACK_BOX } = require("../measure/shared");
+  const timings = {};
+  const base = createMeasurer({ profile: "typst" });
+  let layouts = 0;
+  const measurer = { ...base, layout(prepared, layoutOptions) { layouts += 1; return base.layout(prepared, layoutOptions); } };
+  const renderMathBox = (tex, display) => {
+    const entry = maths.get(tex, display);
+    if (entry.ok) return { widthEm: entry.widthEm, heightEm: entry.heightEm, depthEm: entry.depthEm };
+    return FALLBACK_BOX(display ? `$$${tex}$$` : `$${tex}$`);
+  };
+  const fitter = FitModel.createModelFitter({
+    measurer,
+    contentFor: FitModel.defaultContentFor({ renderMathBox })
+  });
+  let started = performance.now();
+  const mathBefore = maths.stats.ms;
+  const fitted = fitter.fitDocument(model, { mode });
+  timings.fitModelMs = Math.round(performance.now() - started - (maths.stats.ms - mathBefore));
+  timings.measurerLayouts = layouts;
+
+  started = performance.now();
+  const doc = fittedDocument(fitted, nodesByPage, maths, emitters);
+  timings.emitOutputMs = Math.round(performance.now() - started);
+  fs.writeFileSync(path.join(out, "doc.typ"), doc);
+  const compiled = typst.compile("doc.typ", "doc.pdf", out);
+  timings.typstCompileMs = Math.round(compiled.ms);
+  timings.mathjaxMs = Math.round(maths.stats.ms);
+
+  // Drift: every emitted line must render as exactly one text line.
+  let drift = null;
+  if (!options.noDriftCheck) {
+    started = performance.now();
+    const expected = [];
+    fitted.pages.forEach((page, pageIndex) => {
+      for (const node of page.nodes) {
+        if (node.formula || node.code || node.tocRows || !node.paragraphs) continue;
+        const lines = node.lines.filter(line => {
+          const flat = flatten(node.paragraphs[line.paragraph]?.runs);
+          return line.end > line.start && flat.text.slice(line.start, line.end).replace(/[\s\u2028]/g, "").length > 0;
+        });
+        if (!lines.length) continue;
+        expected.push({
+          page: pageIndex,
+          key: node.label,
+          lines: lines.length,
+          x0: Math.min(...lines.map(line => line.x)),
+          x1: Math.max(...lines.map(line => line.x + line.width)),
+          y0: Math.min(...lines.map(line => line.baseline)),
+          y1: Math.max(...lines.map(line => line.baseline)),
+          size: node.fontSize
+        });
+      }
+    });
+    drift = driftCheck(out, expected);
+    timings.driftCheckMs = Math.round(performance.now() - started);
+  }
+
+  const py = options.noPng ? { status: 0 } : spawnSync(PYTHON, ["-c", `
+import fitz, sys
+doc = fitz.open(sys.argv[1])
+texts = []
+for i, page in enumerate(doc):
+    page.get_pixmap(dpi=110).save(f"{sys.argv[2]}/page-{i+1}.png")
+    texts.append(page.get_text())
+open(f"{sys.argv[2]}/text.txt", "w").write("\\n\\f\\n".join(texts))
+`, path.join(out, "doc.pdf"), out], { encoding: "utf8" });
+  if (py.status !== 0) console.warn(`PyMuPDF step failed: ${py.stderr}`);
+  const text = fs.existsSync(path.join(out, "text.txt")) ? fs.readFileSync(path.join(out, "text.txt"), "utf8") : "";
+  const formulasInText = [...text.matchAll(/\$\$?[^$]+\$\$?/g)].map(match => match[0]);
+  const bodyFonts = [...new Set(fitted.pages.flatMap(page => page.nodes)
+    .filter(node => node.kind === "stream" && node.styleKind === "body_text" && node.flowKind === "text")
+    .map(node => node.fontSize))].sort((a, b) => a - b);
+  const report = {
+    fixture: fixture.name, mode, fitter: "model", demoInlineMathSentences: injected,
+    typst: { binary: typst.TYPST, fonts: typst.FONT_DIR, invocations: typst.invocations },
+    timings, drift, bodyFonts,
+    formulas: { rendered: maths.stats.formulas, failed: maths.stats.failed, copiedOutOfPdf: formulasInText },
+    nodes: fitted.pages.flatMap(page => page.nodes.map(node => ({ page: page.index, node: node.label, fontSize: node.fontSize, lineHeight: node.styleLineHeight, lines: node.lines.length, fit: node.fit })))
+  };
+  fs.writeFileSync(path.join(out, "report.json"), JSON.stringify(report, null, 2));
+  console.log(JSON.stringify({ out, fitter: "model", timings, invocations: typst.invocations.length, bodyFonts, drift: drift && (drift.error ? drift : { nodes: drift.nodes, mismatch: drift.mismatch.length, examples: drift.mismatch.slice(0, 5) }), formulasFailed: maths.stats.failed.length, formulasCopied: formulasInText.length }, null, 2));
 }
 
 main();
