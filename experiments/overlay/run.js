@@ -42,6 +42,8 @@ function parseArgs(argv) {
     else if (value === "--retain-band-fit") options.retainBandFit = true;
     else if (value === "--font-caps") options.fontCaps = true;
     else if (value === "--no-font-caps") options.fontCaps = false;
+    else if (value === "--faithful") options.faithful = true;
+    else if (value === "--leading-first") options.leadingFirst = true;
     else if (!options.job) options.job = value;
   }
   if (!options.job) throw new Error("usage: run.js <jobDir> [--out DIR] [--pages N] [--png 1,3] [--no-drift-check]");
@@ -114,6 +116,7 @@ print(json.dumps(out))
   const { model, paint, stats } = buildModel(job, {
     maxPages: options.pages,
     typography: options.typography,
+    retainBodyClassify: Boolean(options.faithful),
     seed: options.seed,
     sourceSizes,
     inheritBelow: options.inheritBelow,
@@ -154,7 +157,11 @@ print(json.dumps(out))
   // strictSourceFit: text must stay inside its own source box. The overlay
   // cannot see vector rules or frames that are not OCR blocks, so growing
   // into "free" space below a box is not safe here.
-  const fitOptions = { mode: "translation", bodyMaxFont, strictSourceFit: options.strictSourceFit, bodyNodeFontCaps: Boolean(options.fontCaps), ...(options.retainBandFit ? { retainBandFit: true } : {}) };
+  const fitOptions = { mode: "translation", bodyMaxFont, strictSourceFit: options.strictSourceFit, bodyNodeFontCaps: Boolean(options.fontCaps), ...(options.retainBandFit ? { retainBandFit: true } : {}), ...(options.faithful ? { retainFaithfulSchedule: true } : {}), ...(options.leadingFirst ? { retainLeadingFirstRepair: true } : {}) };
+  // RPR_RETAIN_TRACE=file: per body paragraph decision trace of the retain profile.
+  const retainTraceRows = [];
+  if (process.env.RPR_RETAIN_TRACE) fitOptions.retainTrace = (id, stage, data) => retainTraceRows.push({ id, stage, ...data });
+  process.on("exit", () => { if (process.env.RPR_RETAIN_TRACE) fs.writeFileSync(process.env.RPR_RETAIN_TRACE, JSON.stringify(retainTraceRows)); });
   let fitted = fitter.fitDocument(model, fitOptions);
   const limiterRounds = [];
   for (let round = 0; round < (retain ? 0 : options.limiterRounds); round++) {

@@ -64,6 +64,9 @@
       (isBlock(node) && node.type !== "title" && node.layoutKind !== "formula" && node.content && Array.isArray(node.content.paragraphs) && !node.content.opaque);
 
     const leadingOf = node => Math.max(0, effectiveLineRatio(node) - capHeight);
+    // Optional diagnostics: fitOptions.retainTrace(nodeId, stage, data).
+    const traceFn = typeof run.fitOptions.retainTrace === "function" ? run.fitOptions.retainTrace : null;
+    const trace = (node, stage, data) => { if (traceFn) traceFn(node.id, stage, { font: layoutControlFontSize(node), ratio: effectiveLineRatio(node), ...data }); };
     const ratioFor = leadingEm => Number((capHeight + leadingEm).toFixed(3));
 
     function setStyle(node, fontSize, lineRatio) {
@@ -267,6 +270,39 @@
       return { font: best, leadingEm: emergencyLeading };
     }
 
+    // fitOptions.retainFaithfulSchedule: retain-pdf's own block fit
+    // (fit_metrics.fit_translated_block_metrics with character-unit demand vs
+    // capacity, dense_small_box flags and the aggressive_fit gate before the
+    // emergency floor), preceded by block_seed_body_policy.adjust_body_seed_font_size.
+    function retainScheduleFaithful(node, pageBody) {
+      const fact = factsOf(node);
+      const source = node.source || {};
+      const item = (source.items || [])[0] || source;
+      const sourceText = String(item.text || "");
+      const translatedText = String(item.translatedText || "");
+      const leadingEm = leadingOf(node);
+      const seed = fact.seed;
+      const pageArea = Math.max(1, Number(node.page?.width || 0) * Number(node.page?.height || 0));
+      const pageBoxAreaRatio = fact.width * fact.height / pageArea;
+      const seedStep = Math.max(seed * 1.02, seed * (1 + leadingEm));
+      const layoutDensity = T.layoutDensityRatio({ width: fact.width, height: fact.height, text: translatedText, fontSize: seed, lineStep: seedStep });
+      const densityRatio = T.translationDensityRatio(sourceText, translatedText);
+      const denseSmall = T.denseSmallBox({ densityRatio, layoutDensity, pageBoxAreaRatio });
+      const heavyDenseSmall = T.heavyDenseSmallBox({ densityRatio, layoutDensity, pageBoxAreaRatio });
+      let font = seed;
+      if (pageBody > 0) {
+        const down = heavyDenseSmall ? 0.34 : (denseSmall ? 0.2 : 0.06);
+        const up = denseSmall ? 0.18 : 0.24;
+        font = Math.round(Math.min(Math.max(font, pageBody - down), pageBody + up) * 100) / 100;
+        if (denseSmall) font = Math.min(font, heavyDenseSmall ? 10.2 : 10.35);
+      }
+      const decided = T.fitTranslatedBlockMetrics({
+        isBody: true, fontSize: font, leadingEm, pageBodyFont: pageBody, width: fact.width, height: fact.height,
+        visualLines: Math.max(1, fact.sourceLines || 1), sourceText, translatedText, denseSmall, heavyDenseSmall
+      });
+      return { ...decided, denseSmall, heavyDenseSmall, seedAdjusted: font };
+    }
+
     // block_seed_metrics: page body size = 46th percentile of the page's body
     // seeds, at least page font - 0.38.
     function pageBodyFonts(bodyNodes) {
@@ -306,16 +342,38 @@
     function blockFit(bodyNodes) {
       const pageBody = pageBodyFonts(bodyNodes);
       for (const node of bodyNodes) {
-        const decided = retainSchedule(node, pageBody.get(node) || 0);
+        const decided = run.fitOptions.retainFaithfulSchedule ? retainScheduleFaithful(node, pageBody.get(node) || 0) : retainSchedule(node, pageBody.get(node) || 0);
         const ratio = ratioFor(decided.leadingEm);
         setStyle(node, decided.font, ratio);
+        if (traceFn) {
+          const f = factsOf(node);
+          const hit = collision.textCollisionDetails([node], COLLIDE);
+          trace(node, "schedule", { seed: f.seed, pageBody: pageBody.get(node) || 0, densitySeed: density(node, Math.max(f.seed, (pageBody.get(node) || 0) - 0.12), decided.leadingEm), decided: decided.font, why: decided.why || "", denseSmall: decided.denseSmall, layoutDensity: decided.layoutDensity, boxH: f.height, lines: lineCount(node), blocker: hit ? hit.blockerName : "" });
+        }
         if (passes(node)) continue;
         settleFirstLine(node);
         if (passes(node)) continue;
-        const floorOk = passesAt(node, MIN_FONT, ratio);
-        const best = floorOk ? largestPassing(MIN_FONT, decided.font, FONT_STEP, value => passesAt(node, value, ratio)) : MIN_FONT;
-        setStyle(node, best, ratio);
+        // retainLeadingFirstRepair: like retain-pdf's emergency path, give back
+        // leading (down to BODY_LEADING_MIN) before font size, then shrink the
+        // font at that leading. Without it only the font shrinks.
+        let repairRatio = ratio;
+        if (run.fitOptions.retainLeadingFirstRepair) {
+          const tight = ratioFor(Math.min(decided.leadingEm, R.BODY_LEADING_MIN));
+          if (tight < ratio - 1e-9 && passesAt(node, decided.font, tight)) {
+            const steps = Math.round((ratio - tight) / 0.01);
+            let lo = 0, hi = steps; // largest ratio = tight + k*0.01 that passes
+            while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (passesAt(node, decided.font, tight + mid * 0.01)) lo = mid; else hi = mid; }
+            setStyle(node, decided.font, tight + lo * 0.01);
+            if (traceFn) trace(node, "leading-repair", { from: ratio, to: tight + lo * 0.01 });
+            continue;
+          }
+          repairRatio = Math.min(ratio, tight);
+        }
+        const floorOk = passesAt(node, MIN_FONT, repairRatio);
+        const best = floorOk ? largestPassing(MIN_FONT, decided.font, FONT_STEP, value => passesAt(node, value, repairRatio)) : MIN_FONT;
+        setStyle(node, best, repairRatio);
         if (!floorOk) node.fitLabel = "RETAIN block fit at floor";
+        if (traceFn) { trace(node, "safety-shrink", { from: decided.font, to: best, floorOk, inkFloor: node.retainInkFloor ?? null, blockerAtDecided: (() => { setStyle(node, decided.font, ratio); const h = collision.textCollisionDetails([node], COLLIDE); setStyle(node, best, repairRatio); return h ? h.blockerName : ""; })() }); }
       }
     }
 
@@ -420,6 +478,7 @@
             targetFont: pageTarget,
             densityAtTarget: density(node, pageTarget)
           });
+          if (traceFn) trace(node, "unify", { target: pageTarget, decision, densityAtTarget: density(node, pageTarget) });
           if (decision !== "target") continue;
           raiseFontSafely(node, pageTarget);
           node.retainUnified = true;
@@ -554,6 +613,7 @@
       unify(groups, target);
       for (const group of groups) recoverUnderfilled(group);
       run.retainBookBodyFont = target;
+      if (traceFn) for (const node of bodyNodes) trace(node, "final", { target });
     }
 
     // retain-pdf caps non-body leading at NON_BODY_LEADING_MAX; the DOM

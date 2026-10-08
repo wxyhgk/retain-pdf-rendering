@@ -338,6 +338,119 @@
     return Math.round(clamp(blended, C.MIN_FONT_SIZE_PT, C.MAX_LOCAL_FONT_SIZE_PT) * 100) / 100;
   }
 
+  // ----- fit_translated_block_metrics (payload/fit_metrics.py), faithful -----
+  // Character-unit demand vs box capacity, exactly as retain-pdf estimates it
+  // (payload/capacity.py, formula_cost.token_units, text_common), plus the
+  // dense_small_box / heavy_dense_small_box flags (block_seed_body_policy).
+  const FIT = Object.freeze({
+    LAYOUT_DENSITY_SAFE_MAX: 0.89, AGGRESSIVE_DEMAND_RATIO: 1.16, AGGRESSIVE_LAYOUT_DENSITY_MARGIN: 0.12,
+    COMPACT_TRIGGER_RATIO: 0.9, LAYOUT_COMPACT_TRIGGER_RATIO: 0.9, HEAVY_COMPACT_RATIO: 1.0,
+    SMALL_PAGE_BOX_RATIO: 0.06, ULTRA_SMALL_PAGE_BOX_RATIO: 0.04,
+    GEOMETRY_DENSE_TRIGGER: 0.86, GEOMETRY_HEAVY_DENSE_TRIGGER: 0.98, LENGTH_DENSITY_AUX_TRIGGER: 1.18
+  });
+  const TOKEN = /\$\$[\s\S]+?\$\$|\$[^$\n]+?\$|\\\([\s\S]+?\\\)|\\\[[\s\S]+?\\\]|[一-鿿]|[A-Za-z0-9]+(?:[-'][A-Za-z0-9]+)*|\s+|[^\s]/g;
+  const WORD = /^[A-Za-z0-9]+(?:[-'][A-Za-z0-9]+)*$/;
+  function retainTokens(text) { return String(text || "").match(TOKEN) || []; }
+  function formulaVisible(tex) {
+    return String(tex || "").replace(/\\[A-Za-z]+/g, "x").replace(/[{}~]/g, "").replace(/\s+/g, "");
+  }
+  // formula_cost.token_units
+  function tokenUnits(token) {
+    if (!token) return 0;
+    if (/^\s+$/.test(token)) return Math.max(0.2, token.length * 0.25);
+    if (/^(\$|\\\(|\\\[)/.test(token) && token.length > 2) {
+      const body = token.replace(/^\$\$|\$\$$|^\$|\$$|^\\\(|\\\)$|^\\\[|\\\]$/g, "");
+      return Math.max(1.35, formulaVisible(body).length * 0.42);
+    }
+    if (/^[一-鿿]$/.test(token)) return 1.0;
+    if (WORD.test(token)) return Math.max(1.0, token.length * 0.55);
+    return 0.45;
+  }
+  function demandUnits(text) { return retainTokens(text).reduce((sum, token) => sum + tokenUnits(token), 0); }
+  function zhCharCount(text) { return (String(text || "").match(/[一-鿿]/g) || []).length; }
+  function sourceWordCount(text) { return retainTokens(text).filter(token => WORD.test(token)).length; }
+  const lineStepOf = (fontSize, leadingEm) => Math.max(fontSize * 1.02, fontSize * (1.0 + leadingEm));
+  // capacity.box_capacity_units
+  function capacityUnits({ width, height, fontSize, leadingEm, visualLines }) {
+    const w = Math.max(8.0, width), h = Math.max(8.0, height);
+    let lines = Math.max(1, Math.floor(h / lineStepOf(fontSize, leadingEm)));
+    if (visualLines && visualLines > 1) lines = Math.min(lines, Math.max(1, visualLines + 1));
+    return lines * Math.max(4.0, w / Math.max(fontSize * 0.92, 1.0)) * 0.98;
+  }
+  // text_common.layout_density_ratio
+  function layoutDensityRatio({ width, height, text, fontSize, lineStep }) {
+    const zh = zhCharCount(text);
+    if (!(fontSize > 0) || !(lineStep > 0) || zh <= 0) return 0;
+    const perLine = Math.max(4.0, Math.max(8.0, width) / Math.max(fontSize * 0.92, 1.0));
+    return Math.max(1.0, zh / perLine) * lineStep / Math.max(8.0, height);
+  }
+  // text_common.translation_density_ratio
+  function translationDensityRatio(sourceText, translatedText) {
+    const words = sourceWordCount(sourceText);
+    const zh = zhCharCount(translatedText);
+    return words > 0 && zh > 0 ? zh / words : 0;
+  }
+  // block_seed_body_policy.is_dense_small_box / is_heavy_dense_small_box
+  function denseSmallBox({ densityRatio, layoutDensity, pageBoxAreaRatio }) {
+    if (!(pageBoxAreaRatio > 0 && pageBoxAreaRatio <= FIT.SMALL_PAGE_BOX_RATIO)) return false;
+    if (layoutDensity >= FIT.GEOMETRY_DENSE_TRIGGER) return true;
+    return densityRatio >= FIT.LENGTH_DENSITY_AUX_TRIGGER && layoutDensity >= FIT.GEOMETRY_DENSE_TRIGGER - 0.08;
+  }
+  function heavyDenseSmallBox({ densityRatio, layoutDensity, pageBoxAreaRatio }) {
+    if (!(pageBoxAreaRatio > 0 && pageBoxAreaRatio <= FIT.ULTRA_SMALL_PAGE_BOX_RATIO)) return false;
+    if (layoutDensity >= FIT.GEOMETRY_HEAVY_DENSE_TRIGGER) return true;
+    return densityRatio >= Math.max(FIT.HEAVY_COMPACT_RATIO, FIT.LENGTH_DENSITY_AUX_TRIGGER) && layoutDensity >= FIT.GEOMETRY_DENSE_TRIGGER;
+  }
+  // payload/fit_metrics.fit_translated_block_metrics (body and non-body).
+  function fitTranslatedBlockMetrics({ isBody, fontSize, leadingEm, pageBodyFont, width, height, visualLines,
+    sourceText, translatedText, denseSmall, heavyDenseSmall, wideAspect = false }) {
+    const r2 = value => Math.round(value * 100) / 100;
+    const demand = demandUnits(translatedText);
+    const lineStep = lineStepOf(fontSize, leadingEm);
+    const lengthDensity = translationDensityRatio(sourceText, translatedText);
+    const layoutDensity = layoutDensityRatio({ width, height, text: translatedText, fontSize, lineStep });
+    const isDenseBlock = lengthDensity >= FIT.COMPACT_TRIGGER_RATIO || layoutDensity >= FIT.LAYOUT_COMPACT_TRIGGER_RATIO;
+    let font = fontSize;
+    if (isBody && pageBodyFont > 0) {
+      let floorGap = heavyDenseSmall ? 0.58 : (denseSmall ? 0.34 : 0.12);
+      if (wideAspect) floorGap = Math.max(0, floorGap - 0.1);
+      font = r2(Math.max(font, pageBodyFont - floorGap));
+    }
+    const out = (f, l, why) => ({ font: f, leadingEm: l, why, isDenseBlock, layoutDensity, lengthDensity, demand });
+    if (demand <= 0) return out(font, leadingEm, "no-demand");
+    const capacity = capacityUnits({ width, height, fontSize: font, leadingEm, visualLines });
+    const safeCapacity = wideAspect ? 1.0 : 0.96;
+    const safeLayout = wideAspect ? FIT.LAYOUT_DENSITY_SAFE_MAX + 0.03 : FIT.LAYOUT_DENSITY_SAFE_MAX;
+    if (capacity <= 0 || (demand <= capacity * safeCapacity && layoutDensity < safeLayout)) return out(font, leadingEm, "fits");
+    const aggressive = heavyDenseSmall
+      || (denseSmall && capacity > 0 && demand > capacity * 1.04 && layoutDensity >= FIT.LAYOUT_DENSITY_SAFE_MAX + 0.03)
+      || (capacity > 0 && demand > capacity * (FIT.AGGRESSIVE_DEMAND_RATIO + 0.1) && layoutDensity >= FIT.LAYOUT_DENSITY_SAFE_MAX + FIT.AGGRESSIVE_LAYOUT_DENSITY_MARGIN);
+    let bestFont = font;
+    const maxSteps = isBody ? (wideAspect ? (aggressive ? 1 : 0) : (aggressive ? 2 : (isDenseBlock ? 1 : 0))) : (aggressive ? 4 : (isDenseBlock ? 2 : 1));
+    const denseAny = denseSmall || isDenseBlock;
+    let minFont = Math.max(denseAny ? 8.45 : 8.75,
+      pageBodyFont > 0 ? pageBodyFont - (heavyDenseSmall ? 0.62 : denseSmall ? 0.4 : 0.18) : (denseAny ? 8.45 : 8.75));
+    if (wideAspect) minFont = Math.max(minFont, font - 0.06);
+    for (let step = 1; step <= maxSteps; step++) {
+      const candidate = r2(Math.max(minFont, font - step * 0.12));
+      if (demand <= capacityUnits({ width, height, fontSize: candidate, leadingEm, visualLines }) * 0.98) return out(candidate, leadingEm, `step${step}`);
+      bestFont = candidate;
+    }
+    if (isBody) {
+      if (!aggressive) return out(bestFont, leadingEm, "not-aggressive");
+      const emergencyLeading = r2(Math.max(denseAny ? 0.54 : 0.56, leadingEm - 0.01));
+      const emergencyMin = Math.max(denseAny ? 7.8 : 8.2,
+        pageBodyFont > 0 ? pageBodyFont - (heavyDenseSmall ? 1.25 : denseSmall ? 0.95 : 0.7) : (denseAny ? 7.8 : 8.2));
+      for (let step = 1; step < (denseAny ? 8 : 5); step++) {
+        const candidate = r2(Math.max(emergencyMin, bestFont - step * 0.14));
+        if (demand <= capacityUnits({ width, height, fontSize: candidate, leadingEm: emergencyLeading, visualLines }) * 0.98) return out(candidate, emergencyLeading, `emergency${step}`);
+        bestFont = candidate;
+      }
+      return out(bestFont, emergencyLeading, "emergency-floor");
+    }
+    return out(bestFont, leadingEm, "non-body-steps");
+  }
+
   return {
     RETAIN: C,
     normalizeLeadingEm, bodyLeadingEm, nonBodyLeadingEm,
@@ -345,6 +458,7 @@
     lowQuantileFontTarget, unifyDecision,
     densitySlackRatio, sourceLineRichWeight, fontForRecoveryDensity, underfillTargetFont,
     underfillDensityLimit, recoveryDensityTarget, recoveryLeadingCap,
-    formulaInsets, pageBaselineFontSize, geometryBodyFontSize
+    formulaInsets, pageBaselineFontSize, geometryBodyFontSize,
+    FIT, demandUnits, capacityUnits, layoutDensityRatio, translationDensityRatio, denseSmallBox, heavyDenseSmallBox, fitTranslatedBlockMetrics
   };
 });
