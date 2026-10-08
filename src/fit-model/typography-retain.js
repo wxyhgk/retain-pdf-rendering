@@ -1,0 +1,350 @@
+// retain-pdf-rendering/fit-model/typography-retain.js
+// Host-agnostic: never reference the host application or plugin globals here.
+//
+// The "retain" typography profile: retain-pdf's body font-size and leading
+// rules (backend/pipeline/retainpdf_pipeline/render/...), as pure functions.
+// Constants are copied verbatim; each cites its retain-pdf source. The fitter
+// keeps its own collision engine on top of them (see passes/retain-body.js).
+//
+// Units: font sizes and lengths in pt (== source-page px), leading in em
+// (Typst `par(leading)`), line ratio = capHeight + leading (Typst line pitch
+// over font size for a plain text line, top-edge cap-height, bottom-edge
+// baseline).
+(function (root, factory) {
+  "use strict";
+  const NAME = "typographyRetain";
+  const DEPENDENCIES = [];
+  const isNode = typeof module === "object" && module && module.exports;
+  const parts = isNode ? null : ((root.RetainPdfRendering || {}).FitModelParts || {});
+  const resolved = DEPENDENCIES.map(([key, file]) => {
+    const value = isNode ? require(file) : parts[key];
+    if (!value) throw new Error(`retain-pdf-rendering/fit-model: load ${file.replace(/^(\.\.?\/)+/, "fit-model/")}.js before ${NAME}`);
+    return value;
+  });
+  const api = factory(root, ...resolved);
+  if (isNode) module.exports = api;
+  else {
+    const namespace = root.RetainPdfRendering = root.RetainPdfRendering || {};
+    (namespace.FitModelParts = namespace.FitModelParts || {})[NAME] = api;
+  }
+})(typeof this === "object" && this ? this : globalThis, function (root) {
+  "use strict";
+
+  const C = Object.freeze({
+    // render/layout/leading_fit.py
+    DEFAULT_LEADING_EM: 0.48,
+    BODY_LEADING_MIN: 0.44,
+    BODY_LEADING_MAX: 0.68,
+    NON_BODY_LEADING_MIN: 0.26,
+    NON_BODY_LEADING_MAX: 0.56,
+    BODY_LEADING_FLOOR_MIN: 0.44,
+    NON_BODY_LEADING_FLOOR_MIN: 0.26,
+    HIGH_DENSITY_LEADING_RATIO: 0.9,
+    FORMULA_LEADING_RATIO: 0.92,
+    BODY_ZH_TARGET_BASE: 0.56,
+    BODY_ZH_TARGET_MIN: 0.50,
+    BODY_NORMAL_LEADING_MIN: 0.52,
+    BODY_COMPACT_LEADING_TIGHTEN_MAX: 0.015,
+    WIDE_ASPECT_OCR_LEADING_WEIGHT: 0.5,
+    WIDE_ASPECT_ZH_LEADING_WEIGHT: 0.5,
+    WIDE_ASPECT_COMPACT_LEADING_TIGHTEN_MAX: 0.025,
+    // foundation/config/layout.py
+    BODY_LEADING_FACTOR: 0.988,
+    BODY_FONT_SIZE_FACTOR: 0.9215,
+    // render/layout/typography/constants.py, font_size_fit.py
+    MIN_FONT_SIZE_PT: 8.4,
+    MAX_FONT_SIZE_PT: 11.6,
+    MAX_LOCAL_FONT_SIZE_PT: 14.2,
+    LINE_HEIGHT_TO_FONT_SCALE: 0.98,
+    LINE_PITCH_TO_FONT_SCALE: 0.82,
+    PAGE_BASELINE_PERCENTILE: 0.42,
+    LOCAL_BLOCK_SCALE_MIN: 0.97,
+    LOCAL_BLOCK_SCALE_MAX: 1.03,
+    BODY_PAGE_BLEND_BASE: 0.86,
+    BODY_PAGE_BLEND_MIN: 0.74,
+    // render/layout/payload/capacity.py: line step and characters per line
+    LINE_STEP_MIN_EM: 1.02,
+    CHAR_WIDTH_EM: 0.92,
+    // render/policy/typography_policy.py: book / page body font unification
+    BODY_FONT_UNIFY_ANCHOR_COUNT: 2,
+    BODY_FONT_UNIFY_ANCHOR_MIN_HEIGHT_PT: 30.0,
+    BODY_FONT_UNIFY_ANCHOR_MIN_WIDTH_RATIO: 0.58,
+    BODY_FONT_UNIFY_ANCHOR_MAX_DENSITY: 1.18,
+    BODY_FONT_UNIFY_TARGET_QUANTILE: 0.25,
+    BODY_FONT_UNIFY_EXTREME_SMALL_RATIO: 0.82,
+    BODY_FONT_UNIFY_EXTREME_SMALL_DELTA_PT: 1.6,
+    BODY_FONT_UNIFY_MIN_FILTERED_COUNT: 2,
+    BODY_FONT_UNIFY_CANDIDATE_MIN_WIDTH_RATIO: 0.30,
+    BODY_FONT_UNIFY_APPLY_TOLERANCE_PT: 0.08,
+    BODY_FONT_UNIFY_GROW_DENSITY_LIMIT: 1.08,
+    // render/policy/typography_policy.py: underfilled body
+    BODY_UNDERFILLED_DENSITY_FLOOR_TRIGGER: 0.60,
+    BODY_UNDERFILLED_DENSITY_RECOVERY_TARGET: 0.80,
+    BODY_UNDERFILLED_DENSITY_RECOVERY_TARGET_NO_SOURCE: 0.68,
+    BODY_UNDERFILLED_DENSITY_RECOVERY_TARGET_SHORT: 0.72,
+    BODY_UNDERFILLED_DENSITY_SAFE_MAX: 0.98,
+    BODY_UNDERFILLED_RECOVERY_MAX_ITERATIONS: 6,
+    BODY_UNDERFILLED_RECOVERY_FONT_STEP_PT: 0.28,
+    BODY_UNDERFILLED_RECOVERY_LEADING_STEP_EM: 0.06,
+    BODY_UNDERFILLED_UNIFIED_FONT_MAX_STEP_PT: 0.0,
+    BODY_UNDERFILLED_FONT_GROW_MAX_PT: 1.15,
+    BODY_UNDERFILLED_FONT_GROW_CONTEXT_BONUS_PT: 0.18,
+    BODY_UNDERFILLED_FONT_GROW_PAGE_BONUS_PT: 0.16,
+    BODY_UNDERFILLED_FONT_GROW_EXP_RATE: 1.55,
+    BODY_UNDERFILLED_FONT_GROW_MAX_LINES: 8,
+    BODY_UNDERFILLED_FONT_GROW_SHORT_LINE_BONUS: 0.04,
+    BODY_UNDERFILLED_FONT_GROW_TALL_SLACK_BONUS: 0.08,
+    BODY_UNDERFILLED_FONT_GROW_SOURCE_LINE_BONUS_PT: 0.18,
+    BODY_UNDERFILLED_FONT_GROW_SOURCE_LINE_CAP_BONUS_PT: 0.16,
+    BODY_UNDERFILLED_FONT_GROW_SOURCE_LINE_DENSITY_BONUS: 0.01,
+    BODY_UNDERFILLED_FONT_GROW_SOURCE_LINE_RATIO_OFFSET: 1.25,
+    BODY_UNDERFILLED_FONT_GROW_SOURCE_LINE_RATIO_RANGE: 2.75,
+    BODY_UNDERFILLED_FONT_HARMONIZE_MAX_RATIO: 1.16,
+    BODY_UNDERFILLED_FONT_GROW_MIN_LINES: 2,
+    BODY_UNDERFILLED_FONT_GROW_MIN_HEIGHT_PT: 22.0,
+    BODY_UNDERFILLED_FONT_GROW_SHORT_MAX_PT: 0.0,
+    BODY_UNDERFILLED_FONT_GROW_LOW_FONT_SKIP_DELTA_PT: 0.20,
+    BODY_COMFORT_LOW_SOURCE_LINE_COUNT_MAX: 5,
+    BODY_COMFORT_LOW_SOURCE_LINE_LEADING_MAX: 0.70,
+    // render/layout/payload/body_common.py: body_context_anchors
+    BODY_CONTEXT_ANCHOR_MIN_WIDTH_RATIO: 0.72,
+    BODY_CONTEXT_ANCHOR_MIN_HEIGHT_PT: 18.0,
+    // render/layout/payload/reading_sort.py: same_text_column
+    SAME_COLUMN_OVERLAP_RATIO: 0.55,
+    SAME_COLUMN_LEFT_BASE_PT: 18.0,
+    SAME_COLUMN_LEFT_PAGE_RATIO: 0.035,
+    // render/layout/payload/formula_safety.py
+    MIN_SAFE_CONTENT_HEIGHT_PT: 8.0,
+    MAX_FORMULA_INSET_HEIGHT_RATIO: 0.18
+  });
+
+  const clamp = (value, low, high) => Math.min(high, Math.max(low, value));
+
+  // leading_fit.normalize_leading_em_for_font_size: in retain-pdf this is a
+  // plain clamp (its size-adjust arguments are discarded), rounded to 0.01.
+  function normalizeLeadingEm(leadingEm, minLeadingEm, maxLeadingEm, floorMinLeadingEm = minLeadingEm) {
+    return Math.round(clamp(leadingEm, Math.max(floorMinLeadingEm, minLeadingEm), maxLeadingEm) * 100) / 100;
+  }
+
+  // leading_fit.estimate_leading_em, body branch. sourcePitch is the source
+  // block's line pitch (pt); compactness (source_compactness_score),
+  // densityRatioX (occupied_ratio_x) and formulaWeight (formula_ratio) default
+  // to 0 when the host cannot provide them.
+  function bodyLeadingEm({ fontSize, sourcePitch = 0, compactness = 0, densityRatioX = 0, formulaWeight = 0, wideAspect = false }) {
+    const zhTarget = Math.max(C.BODY_ZH_TARGET_MIN, C.BODY_ZH_TARGET_BASE - compactness * 0.07);
+    let base;
+    if (sourcePitch > 0 && fontSize > 0) {
+      const ocrEstimated = sourcePitch / fontSize - 1.0;
+      const mixed = wideAspect
+        ? ocrEstimated * C.WIDE_ASPECT_OCR_LEADING_WEIGHT + zhTarget * C.WIDE_ASPECT_ZH_LEADING_WEIGHT
+        : ocrEstimated * 0.35 + zhTarget * 0.65;
+      base = mixed * C.BODY_LEADING_FACTOR;
+    }
+    else base = zhTarget * C.BODY_LEADING_FACTOR;
+    if (compactness > 0) {
+      const tightenMax = wideAspect ? C.WIDE_ASPECT_COMPACT_LEADING_TIGHTEN_MAX : C.BODY_COMPACT_LEADING_TIGHTEN_MAX;
+      base *= 1.0 - Math.min(tightenMax, compactness * 0.07);
+    }
+    if (!wideAspect) base = Math.max(base, C.BODY_NORMAL_LEADING_MIN * C.BODY_LEADING_FACTOR);
+    if (densityRatioX >= 0.86) base = Math.max(base, C.BODY_LEADING_MIN / C.HIGH_DENSITY_LEADING_RATIO);
+    if (formulaWeight >= 0.08) base = Math.max(base, C.BODY_LEADING_MIN / C.FORMULA_LEADING_RATIO);
+    return normalizeLeadingEm(base, C.BODY_LEADING_MIN, C.BODY_LEADING_MAX, C.BODY_LEADING_FLOOR_MIN);
+  }
+
+  // leading_fit.estimate_leading_em, non-body branch.
+  function nonBodyLeadingEm({ fontSize, sourcePitch = 0, densityRatioX = 0, formulaWeight = 0 }) {
+    let base;
+    if (sourcePitch > 0 && fontSize > 0) {
+      const ocrEstimated = sourcePitch / fontSize - 1.0;
+      base = (ocrEstimated * 0.55 + C.DEFAULT_LEADING_EM * 0.45) * C.BODY_LEADING_FACTOR;
+    }
+    else base = C.DEFAULT_LEADING_EM * C.BODY_LEADING_FACTOR;
+    if (densityRatioX >= 0.9) base = Math.max(base, C.NON_BODY_LEADING_MIN / C.HIGH_DENSITY_LEADING_RATIO);
+    if (formulaWeight >= 0.12) base = Math.max(base, C.NON_BODY_LEADING_MIN / C.FORMULA_LEADING_RATIO);
+    return normalizeLeadingEm(base, C.NON_BODY_LEADING_MIN, C.NON_BODY_LEADING_MAX, C.NON_BODY_LEADING_FLOOR_MIN);
+  }
+
+  // capacity.estimated_render_height_pt / body_common.payload_density, with
+  // the line count taken from the real layout instead of retain-pdf's
+  // character-unit estimate. The inflated line step (font * max(1.02,
+  // 1 + leading)) is kept on purpose: every retain-pdf density threshold
+  // (0.60, 0.80, 0.98, 1.08, 1.18) is calibrated against it.
+  function estimatedDensity({ lines, fontSize, leadingEm, boxHeight, formulaDiscount = 1 }) {
+    const lineStep = Math.max(fontSize * C.LINE_STEP_MIN_EM, fontSize * (1.0 + leadingEm));
+    return Math.max(1, lines) * lineStep * formulaDiscount / Math.max(8.0, boxHeight);
+  }
+
+  // capacity._formula_estimate_discount_cached. tokens: retain-pdf's
+  // tokenize_text (a CJK character, a word, a run of spaces, a formula, any
+  // other character); formulas: their LaTeX bodies.
+  const COMPLEX_FORMULA_COMMAND = /\\(?:frac|dfrac|tfrac|sqrt|sum|prod|int|begin|delta|Delta|partial|mathbf|overline|underline)/;
+  function formulaEstimateDiscount(tokenCount, formulas) {
+    if (!formulas.length) return 1.0;
+    const complexCount = formulas.filter(tex => COMPLEX_FORMULA_COMMAND.test(tex)).length;
+    const countRatio = formulas.length / Math.max(1.0, tokenCount);
+    const uncertainty = formulas.length * 0.06 + complexCount * 0.06 + countRatio * 0.9;
+    return Math.round((1.0 - 0.14 * (1.0 - Math.exp(-1.7 * Math.max(0.0, uncertainty)))) * 1000) / 1000;
+  }
+
+  // reading_sort.same_text_column (boxes as {left, top, right, bottom}).
+  function sameColumn(first, second, pageTextWidthMed = 0) {
+    const firstWidth = Math.max(1.0, first.right - first.left);
+    const secondWidth = Math.max(1.0, second.right - second.left);
+    const overlap = Math.max(0.0, Math.min(first.right, second.right) - Math.max(first.left, second.left));
+    if (overlap >= Math.min(firstWidth, secondWidth) * C.SAME_COLUMN_OVERLAP_RATIO) return true;
+    const tolerance = Math.max(C.SAME_COLUMN_LEFT_BASE_PT, (pageTextWidthMed > 0 ? pageTextWidthMed : 0) * C.SAME_COLUMN_LEFT_PAGE_RATIO);
+    return Math.abs(first.left - second.left) <= tolerance;
+  }
+
+  // body_font_unify_policy._low_page_font_target (+ _without_extreme_small_fonts).
+  function lowQuantileFontTarget(fonts, quantile = C.BODY_FONT_UNIFY_TARGET_QUANTILE) {
+    let sorted = fonts.filter(font => font > 0).sort((a, b) => a - b);
+    if (!sorted.length) return 0;
+    if (sorted.length >= C.BODY_FONT_UNIFY_MIN_FILTERED_COUNT + 1) {
+      const middle = sorted.length >> 1;
+      const median = sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
+      const floor = Math.max(median * C.BODY_FONT_UNIFY_EXTREME_SMALL_RATIO, median - C.BODY_FONT_UNIFY_EXTREME_SMALL_DELTA_PT);
+      const filtered = sorted.filter(font => font >= floor);
+      if (filtered.length >= C.BODY_FONT_UNIFY_MIN_FILTERED_COUNT) sorted = filtered;
+    }
+    return Math.round(sorted[Math.floor((sorted.length - 1) * quantile)] * 100) / 100;
+  }
+
+  // body_font_unify_policy._apply_page_font_target, as a decision:
+  // "target" (take the target), "keep" (stay at the current size).
+  function unifyDecision({ currentFont, targetFont, densityAtTarget, directRender = true }) {
+    if (Math.abs(currentFont - targetFont) <= C.BODY_FONT_UNIFY_APPLY_TOLERANCE_PT) return "target";
+    if (currentFont > targetFont) return "target";
+    if (directRender) return "target";
+    if (densityAtTarget <= C.BODY_FONT_UNIFY_GROW_DENSITY_LIMIT) return "target";
+    return "keep";
+  }
+
+  // body_font_underfill_policy helpers.
+  function densitySlackRatio(density) {
+    const trigger = C.BODY_UNDERFILLED_DENSITY_FLOOR_TRIGGER;
+    return clamp((trigger - density) / Math.max(0.01, trigger), 0, 1);
+  }
+
+  function shortLineWeight(lineCount) {
+    return clamp((5.0 - lineCount) / 4.0, 0, 1);
+  }
+
+  function heightSlackWeight(boxHeight, fontSize, lineCount) {
+    if (fontSize <= 0 || lineCount <= 0) return 0;
+    const height = Math.max(8.0, boxHeight);
+    const natural = fontSize * Math.max(1, lineCount) * 1.1;
+    return clamp((height - natural) / Math.max(height, 1.0), 0, 1);
+  }
+
+  function sourceLineRichWeight(sourceLines, lineCount) {
+    if (sourceLines <= 0 || lineCount <= 0) return 0;
+    const ratio = sourceLines / Math.max(1, lineCount);
+    return clamp((ratio - C.BODY_UNDERFILLED_FONT_GROW_SOURCE_LINE_RATIO_OFFSET) / C.BODY_UNDERFILLED_FONT_GROW_SOURCE_LINE_RATIO_RANGE, 0, 1);
+  }
+
+  // _font_for_recovery_density
+  function fontForRecoveryDensity(fontSize, density) {
+    if (fontSize <= 0 || density <= 0) return fontSize;
+    return fontSize * Math.sqrt(C.BODY_UNDERFILLED_DENSITY_RECOVERY_TARGET / Math.max(0.01, density));
+  }
+
+  // _target_font_for_payload
+  function underfillTargetFont({ fontSize, density, pageFontTarget, pageUnderfillRatio, lineCount, boxHeight, sourceLines }) {
+    const slackRatio = densitySlackRatio(density);
+    const sourceWeight = sourceLineRichWeight(sourceLines, lineCount);
+    if (lineCount < C.BODY_UNDERFILLED_FONT_GROW_MIN_LINES || boxHeight < C.BODY_UNDERFILLED_FONT_GROW_MIN_HEIGHT_PT) {
+      const contextCap = Math.min(pageFontTarget, fontSize + C.BODY_UNDERFILLED_FONT_GROW_SHORT_MAX_PT);
+      return Math.min(contextCap, fontSize + C.BODY_UNDERFILLED_FONT_GROW_SHORT_MAX_PT);
+    }
+    const recoveryFont = fontForRecoveryDensity(fontSize, density);
+    let budget = C.BODY_UNDERFILLED_FONT_GROW_MAX_PT;
+    budget += C.BODY_UNDERFILLED_FONT_GROW_SHORT_LINE_BONUS * shortLineWeight(lineCount);
+    budget += C.BODY_UNDERFILLED_FONT_GROW_TALL_SLACK_BONUS * heightSlackWeight(boxHeight, fontSize, lineCount);
+    budget += C.BODY_UNDERFILLED_FONT_GROW_SOURCE_LINE_BONUS_PT * sourceWeight;
+    const eased = budget * (1.0 - Math.exp(-C.BODY_UNDERFILLED_FONT_GROW_EXP_RATE * slackRatio));
+    let contextCap = Math.max(pageFontTarget, recoveryFont);
+    contextCap += C.BODY_UNDERFILLED_FONT_GROW_PAGE_BONUS_PT * pageUnderfillRatio;
+    contextCap += C.BODY_UNDERFILLED_FONT_GROW_CONTEXT_BONUS_PT * slackRatio;
+    contextCap += C.BODY_UNDERFILLED_FONT_GROW_SOURCE_LINE_CAP_BONUS_PT * sourceWeight;
+    return Math.min(contextCap, fontSize + eased);
+  }
+
+  // _density_limit_for_payload
+  function underfillDensityLimit(lineCount, sourceLines) {
+    const bonus = C.BODY_UNDERFILLED_FONT_GROW_SOURCE_LINE_DENSITY_BONUS * sourceLineRichWeight(sourceLines, lineCount);
+    if (lineCount <= 4) return C.BODY_UNDERFILLED_DENSITY_RECOVERY_TARGET + bonus;
+    return Math.min(C.BODY_UNDERFILLED_DENSITY_RECOVERY_TARGET + bonus, 1.00 + 0.01 * Math.max(0, 8 - lineCount) + bonus);
+  }
+
+  // _density_recovery_target
+  function recoveryDensityTarget(lineCount, hasSourceLines) {
+    if (lineCount <= 2) return C.BODY_UNDERFILLED_DENSITY_RECOVERY_TARGET_SHORT;
+    if (!hasSourceLines) return C.BODY_UNDERFILLED_DENSITY_RECOVERY_TARGET_NO_SOURCE;
+    return C.BODY_UNDERFILLED_DENSITY_RECOVERY_TARGET;
+  }
+
+  // _leading_cap_for_recovery
+  function recoveryLeadingCap(lineCount, sourceLines) {
+    if (lineCount <= 2 || sourceLines <= 0) return C.BODY_COMFORT_LOW_SOURCE_LINE_LEADING_MAX;
+    if (sourceLines <= C.BODY_COMFORT_LOW_SOURCE_LINE_COUNT_MAX) return C.BODY_COMFORT_LOW_SOURCE_LINE_LEADING_MAX;
+    return 0.82 + 0.20 * sourceLineRichWeight(sourceLines, lineCount);
+  }
+
+  // formula_safety.formula_safety_insets_pt: content insets (pt) for a block
+  // whose text contains formulas; deep = sub/superscripts or tall operators.
+  const SCRIPT_OR_TALL_MATH = /[_^]|\\(?:frac|dfrac|tfrac|sqrt|sum|prod|int|iint|iiint|lim|underset|overset|substack)\b/;
+  function formulaInsets(fontSize, boxHeight, formulas) {
+    if (fontSize <= 0 || boxHeight <= C.MIN_SAFE_CONTENT_HEIGHT_PT || !formulas.length) return { top: 0, bottom: 0 };
+    const deep = formulas.some(tex => SCRIPT_OR_TALL_MATH.test(tex));
+    let top = Math.min(Math.max(fontSize * (deep ? 0.07 : 0.045), 0.25), 1.15);
+    let bottom = Math.min(Math.max(fontSize * (deep ? 0.18 : 0.11), 0.55), 2.6);
+    const available = Math.max(0, boxHeight - C.MIN_SAFE_CONTENT_HEIGHT_PT);
+    const cap = Math.min(boxHeight * C.MAX_FORMULA_INSET_HEIGHT_RATIO, available);
+    const total = top + bottom;
+    if (cap <= 0 || total <= 0) return { top: 0, bottom: 0 };
+    if (total > cap) {
+      const scale = cap / total;
+      top *= scale;
+      bottom *= scale;
+    }
+    return { top: Math.round(top * 100) / 100, bottom: Math.round(bottom * 100) / 100 };
+  }
+
+  // typography/baseline.page_baseline_font_size + font_size_fit
+  // .estimate_font_size_pt for a body block, from OCR line geometry only
+  // (the fallback when a source PDF has no text layer). glyphHeights: median
+  // OCR line heights of the page's text blocks; pitches: their line pitches.
+  function percentile(values, q) {
+    const sorted = values.filter(value => value > 0).sort((a, b) => a - b);
+    if (!sorted.length) return 0;
+    return sorted[Math.floor((sorted.length - 1) * q)];
+  }
+
+  function pageBaselineFontSize(glyphHeights, pitches) {
+    const metric = percentile(glyphHeights, C.PAGE_BASELINE_PERCENTILE) * C.LINE_HEIGHT_TO_FONT_SCALE
+      || percentile(pitches, C.PAGE_BASELINE_PERCENTILE) * C.LINE_PITCH_TO_FONT_SCALE;
+    if (!(metric > 0)) return 0;
+    return clamp(metric * C.BODY_FONT_SIZE_FACTOR, C.MIN_FONT_SIZE_PT, C.MAX_LOCAL_FONT_SIZE_PT);
+  }
+
+  function geometryBodyFontSize({ glyphHeight, pitch, pagePitch, pageFont, compactness = 0 }) {
+    const local = clamp((glyphHeight > 0 ? glyphHeight * C.LINE_HEIGHT_TO_FONT_SCALE : pitch * C.LINE_PITCH_TO_FONT_SCALE) * C.BODY_FONT_SIZE_FACTOR,
+      C.MIN_FONT_SIZE_PT, C.MAX_LOCAL_FONT_SIZE_PT);
+    const blockScale = pagePitch > 0 && pitch > 0 ? clamp(pitch / pagePitch, C.LOCAL_BLOCK_SCALE_MIN, C.LOCAL_BLOCK_SCALE_MAX) : 1;
+    const pageEstimate = pageFont > 0 ? pageFont * blockScale : local;
+    const pageWeight = Math.max(C.BODY_PAGE_BLEND_MIN, C.BODY_PAGE_BLEND_BASE - compactness * 0.18);
+    const blended = pageEstimate * pageWeight + local * (1 - pageWeight);
+    return Math.round(clamp(blended, C.MIN_FONT_SIZE_PT, C.MAX_LOCAL_FONT_SIZE_PT) * 100) / 100;
+  }
+
+  return {
+    RETAIN: C,
+    normalizeLeadingEm, bodyLeadingEm, nonBodyLeadingEm,
+    estimatedDensity, formulaEstimateDiscount, sameColumn,
+    lowQuantileFontTarget, unifyDecision,
+    densitySlackRatio, sourceLineRichWeight, fontForRecoveryDensity, underfillTargetFont,
+    underfillDensityLimit, recoveryDensityTarget, recoveryLeadingCap,
+    formulaInsets, pageBaselineFontSize, geometryBodyFontSize
+  };
+});

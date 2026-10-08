@@ -29,6 +29,9 @@
   function createCollision(ctx, geo) {
     const strict = ctx.strict;
     const { geometry, strictBarrier, renderedContentRectsInPage, textRectsInPage, elementBoxInPage, measureTextBand, blockDebugName } = geo;
+    // Ink policy: how deep a line's band may run into another text node's box
+    // once it has left its own box (pt).
+    const BAND_INTRUSION_TOLERANCE = 1.0;
 
     // Strict collisions (lineModel "measurer"): every source rect is tested and
     // the page boundary always, with zero tolerances. Inside its own box a line
@@ -112,7 +115,50 @@
       }
     };
 
-    const policy = strict ? strictPolicy : tolerantPolicy;
+    // Ink collisions (typography profile "retain"): retain-pdf lets glyphs
+    // overhang a block's box (CJK ink above cap height, descenders), so a line
+    // may reach into the empty part of a neighbour's box. What it may never
+    // touch is the neighbour's ink — all of it, spilled or not — or, for nodes
+    // without text (figures, tables, preserved formulas), their box, which
+    // renderedContentRectsInPage already returns as their ink. The page
+    // boundary is checked with zero tolerance as in the strict policy.
+    const inkPolicy = {
+      testsEveryRect: true,
+      checksPageAlways: true,
+      pageTolerance: 0,
+      barrier(element, box) {
+        return strictBarrier(element, box);
+      },
+      // No column exemption: an ink-on-ink hit is a real overlap wherever it is.
+      findHit(rect, { barriers }) {
+        return barriers.find((barrier) => {
+          if (!barrier.allInkBounds || !rectsOverlap(rect, barrier.allInkBounds, 0)) return false;
+          return barrier.allInk.some((other) => rectsOverlap(rect, other, 0));
+        });
+      },
+      // Text may run past its box into free space, not into another
+      // paragraph: a line band (cap height..baseline, so descenders may still
+      // overhang) outside its own box must stay out of the vertical extent of
+      // every other text box in the same column (measured with the source
+      // box's width, so a short last line cannot slip in beside an indent).
+      findBandHit(node, { own, barriers }) {
+        const band = geometry(node).band || [];
+        for (const line of band) {
+          if (line.bottom <= own.bottom + 1e-6 && line.top >= own.top - 1e-6) continue;
+          const hit = barriers.find((barrier) => {
+            if (!textRectsInPage(barrier.element).length) return false;
+            const box = barrier.box;
+            const depth = Math.min(line.bottom, box.bottom) - Math.max(line.top, box.top);
+            const width = Math.min(own.right, box.right) - Math.max(own.left, box.left);
+            return depth > BAND_INTRUSION_TOLERANCE && width > BAND_INTRUSION_TOLERANCE;
+          });
+          if (hit) return { hit, rect: line };
+        }
+        return null;
+      }
+    };
+
+    const policy = ctx.collisionPolicy === "ink" ? inkPolicy : (strict ? strictPolicy : tolerantPolicy);
 
     function textCollisionDetails(nodes, options = {}) {
       const nodeSet = new Set(nodes);
@@ -154,6 +200,12 @@
           node, own, barriers, options, bodyColumnIndependentFit, ignoreNodeTopOverflow,
           sharedEdgeTolerance, sharedHorizontalEdgeTolerance
         };
+        if (policy.findBandHit) {
+          const band = policy.findBandHit(node, scan);
+          if (band) {
+            return { source: node, blocker: band.hit.element, rect: band.rect, sourceName: blockDebugName(node), blockerName: blockDebugName(band.hit.element) };
+          }
+        }
         for (const rect of sourceRects) {
           const pageTolerance = policy.pageTolerance;
           if ((avoidPageOverflow || policy.checksPageAlways) && (

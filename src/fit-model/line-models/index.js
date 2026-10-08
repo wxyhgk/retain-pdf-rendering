@@ -5,7 +5,7 @@
 (function (root, factory) {
   "use strict";
   const NAME = "lineModel";
-  const DEPENDENCIES = [["lineModelMeasurer", "./measurer"], ["lineModelCss", "./css"]];
+  const DEPENDENCIES = [["lineModelMeasurer", "./measurer"], ["lineModelCss", "./css"], ["lineModelRetain", "./retain"]];
   const isNode = typeof module === "object" && module && module.exports;
   const parts = isNode ? null : ((root.RetainPdfRendering || {}).FitModelParts || {});
   const resolved = DEPENDENCIES.map(([key, file]) => {
@@ -19,10 +19,12 @@
     const namespace = root.RetainPdfRendering = root.RetainPdfRendering || {};
     (namespace.FitModelParts = namespace.FitModelParts || {})[NAME] = api;
   }
-})(typeof this === "object" && this ? this : globalThis, function (root, Measurer, Css) {
+})(typeof this === "object" && this ? this : globalThis, function (root, Measurer, Css, Retain) {
   "use strict";
   function createLineModel(ctx) {
-    return ctx.lineModel === "css" ? Css.createCssLineModel(ctx) : Measurer.createMeasurerLineModel(ctx);
+    if (ctx.lineModel === "css") return Css.createCssLineModel(ctx);
+    if (ctx.lineModel === "retain") return Retain.createRetainLineModel(ctx);
+    return Measurer.createMeasurerLineModel(ctx);
   }
 
   return { createLineModel };

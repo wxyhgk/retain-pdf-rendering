@@ -43,7 +43,9 @@
         node.style.width ?? "",
         node.style.nowrap ? 1 : 0,
         node.originalLines || "",
-        node.formula ? `${node.formula.scale}|${node.formula.numberRight}` : ""
+        node.formula ? `${node.formula.scale}|${node.formula.numberRight}` : "",
+        // retain profile only: first-line ink floor (passes/retain-body.js).
+        node.retainInkFloor ?? ""
       ].join("|");
     }
 
@@ -61,13 +63,15 @@
       if (last && last.fontSize === fontSize && last.lineRatio === lineRatio &&
           last.width === node.style.width && last.nowrap === Boolean(node.style.nowrap) &&
           last.originalLines === node.originalLines &&
-          last.formulaScale === node.formula?.scale && last.numberRight === node.formula?.numberRight) {
+          last.formulaScale === node.formula?.scale && last.numberRight === node.formula?.numberRight &&
+          last.inkFloor === node.retainInkFloor) {
         return last.value;
       }
       const value = cachedGeometry(node);
       node._geometryLast = {
         fontSize, lineRatio, width: node.style.width, nowrap: Boolean(node.style.nowrap),
-        originalLines: node.originalLines, formulaScale: node.formula?.scale, numberRight: node.formula?.numberRight, value
+        originalLines: node.originalLines, formulaScale: node.formula?.scale, numberRight: node.formula?.numberRight,
+        inkFloor: node.retainInkFloor, value
       };
       return value;
     }
@@ -103,6 +107,11 @@
           justified: Boolean(line.justified)
         };
         rects.lines.push(record);
+        // Line models with a fit band (retain): the overflow test measures the
+        // band, collisions keep the ink rects below.
+        if (Number.isFinite(line.fitTop) && (line.end > line.start || line.width > .5)) {
+          (rects.band || (rects.band = [])).push({ left: record.x, right: record.x + line.width, top: originY + line.fitTop, bottom: originY + line.fitBottom });
+        }
         if (line.width <= .5 || record.glyphBottom - record.glyphTop <= .5) continue;
         if (line.end > line.start || line.width > .5) {
           rects.text.push({ left: record.x, right: record.x + line.width, top: record.glyphTop, bottom: record.glyphBottom });
@@ -162,6 +171,11 @@
           const align = singleNowrap ? "left" : textAlign(node);
           const rhythm = paragraphRhythm(fontSize, ratio, node.paragraphGap);
           y = rhythm.top;
+          if (lineModel.contentInsets) {
+            const insets = lineModel.contentInsets(fontSize, clientHeight, paragraphs, node);
+            y += insets.top;
+            out.bandBottomInset = insets.bottom;
+          }
           paragraphs.forEach((paragraph, index) => {
             const result = layoutText(measurer, paragraph.prepared, {
               fontSize,
@@ -253,6 +267,11 @@
         const align = textAlign(node);
         const rhythm = paragraphRhythm(fontSize, ratio, 0);
         let y = rhythm.top;
+        if (lineModel.contentInsets) {
+          const insets = lineModel.contentInsets(fontSize, clientHeight, paragraphs, node);
+          y += insets.top;
+          out.bandBottomInset = insets.bottom;
+        }
         paragraphs.forEach((paragraph, index) => {
           const result = layoutText(measurer, paragraph.prepared, {
             fontSize,
@@ -327,6 +346,16 @@
       let firstTop = null;
       let lastBottom = 0;
       let hasText = false;
+      if (value.band) {
+        for (const rect of value.band) {
+          const rectTop = rect.top - top;
+          const bottom = rect.bottom - top + (value.bandBottomInset || 0);
+          if (firstTop === null || rectTop < firstTop) firstTop = rectTop;
+          if (bottom > lastBottom) lastBottom = bottom;
+          hasText = true;
+        }
+        return { hasText, firstTop: firstTop ?? 0, lastBottom };
+      }
       for (const rect of value.text) {
         const rectTop = rect.top - top;
         const bottom = rect.bottom - top;
