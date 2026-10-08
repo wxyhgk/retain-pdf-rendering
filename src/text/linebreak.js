@@ -468,6 +468,90 @@
     return width - lineEndAdjustEm(p, start, e);
   }
 
+  // Justifiable gaps of a line the way Typst stretches a justified line:
+  // after every space and CJK character except the last glyph (Latin letters
+  // and formula boxes are not stretched).
+  const CJK_JUSTIFIABLE = /[　-〿㐀-鿿豈-﫿＀-￯]/;
+  function justifiableGaps(p, start, end) {
+    const e = trimmedEnd(p, start, end);
+    let gaps = 0;
+    for (let i = start; i < e - 1; i++) {
+      const c = p.text[i];
+      if (isSpace(c) || CJK_JUSTIFIABLE.test(c)) gaps += 1;
+    }
+    return gaps;
+  }
+
+  // Opt-in balanced breaking (options.balance = { trigger, maxStretch }).
+  // Greedy first-fit leaves all the slack on the line before a wide unbreakable
+  // item (an inline formula, a URL, a long number run), which justification
+  // then spreads as visible letter-spacing. For every run of lines between
+  // forced breaks that greedy left with a justified line stretched beyond
+  // `trigger` em per gap, choose the breaks that minimise the sum of squared
+  // per-gap stretch over the non-final lines, using exactly the greedy number
+  // of lines so the paragraph's height and fitted size do not change. The
+  // emitter paints the chosen lines explicitly, so Typst parity is not needed.
+  function balanceLines(p, lines, breaks, lineWidth, available, size, settings) {
+    const trigger = Number.isFinite(settings.trigger) ? settings.trigger : 0.08;
+    const stretchEm = (start, end, width, first) => {
+      const gaps = justifiableGaps(p, start, end);
+      const slack = (available(first) - width) / size;
+      return gaps > 0 ? slack / gaps : (slack > 1e-3 ? Infinity : 0);
+    };
+    let segmentStart = 0;
+    for (let index = 0; index < lines.length; index++) {
+      if (!lines[index].mandatory && index < lines.length - 1) continue;
+      const segment = lines.slice(segmentStart, index + 1);
+      const count = segment.length;
+      const worst = Math.max(0, ...segment.slice(0, -1).map((line, k) =>
+        stretchEm(line.start, line.end, line.width, segmentStart + k === 0)));
+      if (count >= 2 && worst > trigger) {
+        const from = segment[0].start;
+        const to = segment[count - 1].end;
+        const endMandatory = segment[count - 1].mandatory;
+        // Candidate break positions strictly inside the segment.
+        const points = [from, ...breaks.filter(bk => !bk.mandatory && bk.position > from && bk.position < to).map(bk => bk.position), to];
+        const n = points.length;
+        // best[m][j]: least cost to end line m (0-based) at points[j].
+        const best = Array.from({ length: count }, () => new Array(n).fill(Infinity));
+        const back = Array.from({ length: count }, () => new Array(n).fill(-1));
+        for (let m = 0; m < count; m++) {
+          const first = segmentStart + m === 0;
+          const lastLine = m === count - 1;
+          for (let j = 1; j < n; j++) {
+            if (lastLine !== (j === n - 1)) continue;
+            for (let i = j - 1; i >= 0; i--) {
+              const prev = m === 0 ? (i === 0 ? 0 : Infinity) : best[m - 1][i];
+              if (!Number.isFinite(prev)) continue;
+              const mandatory = lastLine && endMandatory;
+              const width = lineWidth(points[i], points[j], first, mandatory);
+              if (width > available(first) + EPS) break; // wider for every smaller i
+              const s = lastLine ? 0 : stretchEm(points[i], points[j], width, first);
+              const cost = prev + (Number.isFinite(s) ? s * s : 1e6);
+              if (cost < best[m][j]) { best[m][j] = cost; back[m][j] = i; }
+            }
+          }
+        }
+        const greedyCost = segment.slice(0, -1).reduce((sum, line, k) => {
+          const s = stretchEm(line.start, line.end, line.width, segmentStart + k === 0);
+          return sum + (Number.isFinite(s) ? s * s : 1e6);
+        }, 0);
+        if (best[count - 1][n - 1] < greedyCost - 1e-9) {
+          const chosen = [];
+          let j = n - 1;
+          for (let m = count - 1; m >= 0; m--) {
+            const i = back[m][j];
+            const mandatory = m === count - 1 && endMandatory;
+            chosen.unshift({ start: points[i], end: points[j], width: lineWidth(points[i], points[j], segmentStart + m === 0, mandatory), mandatory });
+            j = i;
+          }
+          lines.splice(segmentStart, count, ...chosen);
+        }
+      }
+      segmentStart = index + 1;
+    }
+  }
+
   // Greedy layout at `size` in a region `width` wide.
   // options: { indent = 0 (first line, absolute), hang = 0 (later lines, absolute) }
   // Returns { lines: [{ start, end, width, mandatory, top, bottom }], height }
@@ -500,6 +584,7 @@
       else last = { end: bk.position, width: current };
     }
     if (last) lines.push({ start, end: last.end, width: last.width, mandatory: false });
+    if (options.balance) balanceLines(p, lines, breaks, lineWidth, available, size, options.balance);
 
     let height = 0;
     for (const line of lines) {

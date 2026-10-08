@@ -110,7 +110,8 @@
       const lineHeight = Number.isFinite(Number(layoutOptions.lineHeight)) ? Number(layoutOptions.lineHeight) : 1;
       const align = layoutOptions.align || "justify";
       const { indent, hang } = resolveIndents(layoutOptions, fontSize);
-      const core = Linebreak.layout(prepared, fontSize, width, { indent, hang });
+      // Opt-in balanced breaking for justified text (see Linebreak.layout).
+      const core = Linebreak.layout(prepared, fontSize, width, layoutOptions.balance ? { indent, hang, balance: layoutOptions.balance } : { indent, hang });
       const leading = Math.max(0, (lineHeight - 1) * fontSize);
       const lines = [];
       let y = 0;

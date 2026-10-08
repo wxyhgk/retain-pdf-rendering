@@ -29,7 +29,9 @@
       width: options.nowrap ? 1e9 : options.width,
       align: options.nowrap ? "left" : (options.align || "left"),
       firstLineIndent: options.firstLineIndent || 0,
-      hangingIndent: options.hangingIndent || 0
+      hangingIndent: options.hangingIndent || 0,
+      // Opt-in balanced breaking (ctx.balance): absent means greedy.
+      ...(options.balance && !options.nowrap ? { balance: options.balance } : {})
     });
   }
 

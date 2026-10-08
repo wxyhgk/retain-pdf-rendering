@@ -76,6 +76,47 @@ function fileSize(file) {
 // Retain-pdf's own per-block sizes, read from its overlay Typst source
 // (max_size of pdftr_fit_* calls or the fixed `set text(size:)`), for the
 // font-size comparison.
+// Justification stretch per justified line, the way Typst distributes it:
+// extra width goes to the justifiable gaps (spaces and CJK characters; Latin
+// letters and formula boxes are not stretched). Reported in em per gap.
+const CJK_JUSTIFIABLE = /[\u3000-\u303f\u3400-\u9fff\uf900-\ufaff\uff00-\uffef]/;
+function justifyStats(fitted, paint, base) {
+  const rows = [];
+  for (const page of fitted.pages) {
+    for (const node of page.nodes) {
+      if (!paint[node.id] || !node.paragraphs) continue;
+      for (const line of node.lines) {
+        if (!line.justified) continue;
+        const flat = flatten(node.paragraphs[line.paragraph]?.runs);
+        let text = "";
+        const runs = [];
+        for (let i = line.start; i < line.end; i++) {
+          const box = flat.boxes.get(i);
+          if (box) runs.push(box);
+          else if (flat.text[i] !== "\u2028") runs.push({ type: "text", text: flat.text[i] });
+          text += flat.text[i] === "\u2028" ? "" : flat.text[i];
+        }
+        const natural = base.naturalWidth(base.prepare(runs), { fontSize: node.fontSize });
+        const body = text.replace(/\s+$/, "");
+        let gaps = 0;
+        for (let i = 0; i < body.length - 1; i++) {
+          if (/\s/.test(body[i]) || CJK_JUSTIFIABLE.test(body[i])) gaps += 1;
+        }
+        const slack = Math.max(0, line.width - natural);
+        const perGapEm = gaps ? slack / gaps / node.fontSize : (slack > 0.01 ? Infinity : 0);
+        rows.push({ page: page.index + 1, node: node.id, perGapEm: Number(perGapEm.toFixed(3)), slackEm: Number((slack / node.fontSize).toFixed(2)), gaps, text: body.replace(/\uFFFC/g, "▢") });
+      }
+    }
+  }
+  const values = rows.map(row => row.perGapEm).filter(Number.isFinite).sort((a, b) => a - b);
+  const q = p => values.length ? values[Math.min(values.length - 1, Math.floor(p * (values.length - 1)))] : 0;
+  return {
+    lines: rows.length, p50: q(0.5), p90: q(0.9), p99: q(0.99), max: values.length ? values[values.length - 1] : 0,
+    over015: rows.filter(row => row.perGapEm > 0.1501).length, over025: rows.filter(row => row.perGapEm > 0.25).length,
+    worst: rows.sort((a, b) => b.perGapEm - a.perGapEm).slice(0, 8)
+  };
+}
+
 function retainPdfSizes(jobDir) {
   const file = path.join(jobDir, "rendered/typst/book-overlays/book-overlay.typ");
   if (!fs.existsSync(file)) return null;
@@ -192,12 +233,14 @@ print(json.dumps(out))
   timings.fitMs = Math.round(performance.now() - started - (maths.stats.ms - mathBefore));
   timings.measurerLayouts = layouts;
 
-  // Greedy breaking can leave a justified line with very few characters
-  // (a wide formula moved to the next line); stretched to the full width it
-  // becomes letter-spaced. Paint such lines unjustified at their natural
-  // width: break points and measurement are unchanged, ink only shrinks.
+  // Over-stretched justified lines. With the retain typography the engine
+  // handles this (line model: stretch capped per Typst-justifiable gap;
+  // passes/justify.js: balanced breaking after the fit), so nothing is
+  // changed here. Legacy path (no retain typography): a justified line whose
+  // slack per character exceeds 0.25 em is painted unjustified at its
+  // natural width.
   let unjustified = 0;
-  for (const node of fitted.pages.flatMap(page => page.nodes)) {
+  for (const node of retain ? [] : fitted.pages.flatMap(page => page.nodes)) {
     if (!paint[node.id] || !node.paragraphs) continue;
     for (const line of node.lines) {
       if (!line.justified) continue;
@@ -218,6 +261,7 @@ print(json.dumps(out))
     }
   }
   stats.unjustifiedLines = unjustified;
+  stats.justify = justifyStats(fitted, paint, base);
 
   started = performance.now();
   const { source, painted } = overlayDocument(fitted, paint, maths);

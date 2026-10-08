@@ -7,7 +7,7 @@
 (function (root, factory) {
   "use strict";
   const NAME = "fitter";
-  const DEPENDENCIES = [["constants", "./constants"], ["content", "./content"], ["rects", "./rects"], ["document", "./document"], ["lineModel", "./line-models/index"], ["geometry", "./geometry"], ["collision", "./collision"], ["tuning", "./tuning"], ["titlePasses", "./passes/titles"], ["clampPasses", "./passes/clamps"], ["finalAuditPass", "./passes/final-audit"], ["formulaPasses", "./passes/formulas"], ["retainBodyPass", "./passes/retain-body"], ["run", "./run"], ["serialize", "./serialize"]];
+  const DEPENDENCIES = [["constants", "./constants"], ["content", "./content"], ["rects", "./rects"], ["document", "./document"], ["lineModel", "./line-models/index"], ["geometry", "./geometry"], ["collision", "./collision"], ["tuning", "./tuning"], ["titlePasses", "./passes/titles"], ["clampPasses", "./passes/clamps"], ["finalAuditPass", "./passes/final-audit"], ["formulaPasses", "./passes/formulas"], ["retainBodyPass", "./passes/retain-body"], ["justifyPasses", "./passes/justify"], ["run", "./run"], ["serialize", "./serialize"]];
   const isNode = typeof module === "object" && module && module.exports;
   const parts = isNode ? null : ((root.RetainPdfRendering || {}).FitModelParts || {});
   const resolved = DEPENDENCIES.map(([key, file]) => {
@@ -21,7 +21,7 @@
     const namespace = root.RetainPdfRendering = root.RetainPdfRendering || {};
     (namespace.FitModelParts = namespace.FitModelParts || {})[NAME] = api;
   }
-})(typeof this === "object" && this ? this : globalThis, function (root, constants, content, rects, document, LineModels, Geometry, Collision, Tuning, Titles, Clamps, FinalAudit, Formulas, RetainBody, Run, Serialize) {
+})(typeof this === "object" && this ? this : globalThis, function (root, constants, content, rects, document, LineModels, Geometry, Collision, Tuning, Titles, Clamps, FinalAudit, Formulas, RetainBody, Justify, Run, Serialize) {
   "use strict";
   const { OBJECT, LINE_SEPARATOR, DEFAULT_CONTENT_AREAS, sourceHanSerifInk, FINAL_AUDIT_OPTIONS } = constants;
   const { defaultContentFor, normalizeDisplayTeX, collapseRuns, textToRuns, htmlToRuns } = content;
@@ -63,10 +63,23 @@
     // Optional diagnostics: trace(event, details) at every stop decision.
     const trace = typeof config.trace === "function" ? config.trace : null;
 
+    // Justification (passes/justify.js, line models). justifyCap: em of
+    // stretch per Typst-justifiable gap a justified line may receive (retain
+    // line model; null = unlimited). balanceLines: re-break justified text
+    // with balanced breaking after the fit (true / { trigger }, false = off).
+    // Both default on for the "retain" profile only: 0.15 em keeps CJK text
+    // from reading as letter-spaced (greedy p99 is about 0.23-0.26 em on the
+    // two reference jobs, so the cap touches roughly 1-3% of justified lines).
+    const justifyCap = config.justifyCap === null ? null
+      : Number.isFinite(config.justifyCap) ? Number(config.justifyCap)
+        : (typography === "retain" ? 0.15 : null);
+    const balanceSetting = config.balanceLines ?? (typography === "retain");
+    const balance = balanceSetting ? { ...(typeof balanceSetting === "object" ? balanceSetting : {}) } : null;
+
     // Everything the parts read from the configuration. No part sees `config`.
     const ctx = Object.freeze({
       measurer, contentFor, contentAreas, roleMeasurers, lineModel, inkExtents, strict, pixelRound, trace,
-      typography, collisionPolicy
+      typography, collisionPolicy, justifyCap, balance
     });
     const lines = LineModels.createLineModel(ctx);
     const geometry = Geometry.createGeometry(ctx, lines);
@@ -99,7 +112,8 @@
         finalAudit: FinalAudit.createFinalAuditPass(ctx, run, deps),
         formulas: Formulas.createFormulaPasses(ctx, run, deps),
         // Typography profile "retain" only: retain-pdf's body pipeline.
-        retainBody: ctx.typography === "retain" ? RetainBody.createRetainBodyPass(ctx, run, deps) : null
+        retainBody: ctx.typography === "retain" ? RetainBody.createRetainBodyPass(ctx, run, deps) : null,
+        justify: ctx.balance ? Justify.createJustifyPasses(ctx, run, deps) : null
       });
     }
 

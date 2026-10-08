@@ -45,7 +45,9 @@
         node.originalLines || "",
         node.formula ? `${node.formula.scale}|${node.formula.numberRight}` : "",
         // retain profile only: first-line ink floor (passes/retain-body.js).
-        node.retainInkFloor ?? ""
+        node.retainInkFloor ?? "",
+        // balanced line breaking accepted by passes/justify.js.
+        node.balanceLines ? 1 : ""
       ].join("|");
     }
 
@@ -64,14 +66,14 @@
           last.width === node.style.width && last.nowrap === Boolean(node.style.nowrap) &&
           last.originalLines === node.originalLines &&
           last.formulaScale === node.formula?.scale && last.numberRight === node.formula?.numberRight &&
-          last.inkFloor === node.retainInkFloor) {
+          last.inkFloor === node.retainInkFloor && last.balance === Boolean(node.balanceLines)) {
         return last.value;
       }
       const value = cachedGeometry(node);
       node._geometryLast = {
         fontSize, lineRatio, width: node.style.width, nowrap: Boolean(node.style.nowrap),
         originalLines: node.originalLines, formulaScale: node.formula?.scale, numberRight: node.formula?.numberRight,
-        inkFloor: node.retainInkFloor, value
+        inkFloor: node.retainInkFloor, balance: Boolean(node.balanceLines), value
       };
       return value;
     }
@@ -185,7 +187,8 @@
               nowrap: singleNowrap || node.style.nowrap,
               firstLineIndent: node.refs || singleNowrap ? 0 : Math.max(0, paragraph.indent || 0),
               hangingIndent: node.refs ? 1.1 * fontSize : 0,
-              text: paragraph.text
+              text: paragraph.text,
+              ...(node.balanceLines && ctx.balance ? { balance: ctx.balance } : {})
             });
             let originX = contentLeft;
             if (singleNowrap && node.singleLineAlign === "center") {
@@ -279,7 +282,8 @@
             width,
             align: node.style.nowrap ? "left" : align,
             nowrap: node.style.nowrap,
-            text: paragraph.text
+            text: paragraph.text,
+            ...(node.balanceLines && ctx.balance ? { balance: ctx.balance } : {})
           }, fontRole(node));
           pushLineRects(out, result.lines, box.left, box.top + y, index);
           out.scrollWidth = Math.max(out.scrollWidth, result.maxLineWidth);

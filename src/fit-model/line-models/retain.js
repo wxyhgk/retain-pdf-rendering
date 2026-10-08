@@ -46,8 +46,31 @@
     return Number.isFinite(value) && value > 0 ? value : DEFAULT_CAP_HEIGHT;
   }
 
+  // Typst puts all of a justified line's slack into its justifiable gaps:
+  // after every space and CJK character except the last glyph (Latin letters
+  // and formula boxes are not stretched).
+  const CJK_JUSTIFIABLE = /[\u3000-\u303f\u3400-\u9fff\uf900-\ufaff\uff00-\uffef]/;
+  function justifiableGaps(lineText) {
+    const body = String(lineText).replace(/[\s\u2028]+$/, "");
+    let gaps = 0;
+    for (let i = 0; i < body.length - 1; i++) if (/\s/.test(body[i]) || CJK_JUSTIFIABLE.test(body[i])) gaps += 1;
+    return gaps;
+  }
+
   function createRetainLineModel(ctx) {
     const inkExtents = ctx.inkExtents;
+    // Justification cap (em per justifiable gap, ctx.justifyCap): a justified
+    // line is painted at most natural + gaps * cap wide, the rest stays as
+    // ragged-right space; a line with no justifiable gap is not justified.
+    // It only narrows the painted width, so it can never add ink anywhere.
+    const justifyCap = Number.isFinite(ctx.justifyCap) && ctx.justifyCap >= 0 ? ctx.justifyCap : null;
+    function capJustification(line, lineText, fontSize) {
+      const painted = paintedWidth(line);
+      if (justifyCap === null || !line.justified) return { width: painted, justified: line.justified };
+      const gaps = justifiableGaps(lineText);
+      if (!gaps) return { width: line.width, justified: false };
+      return { width: Math.min(painted, line.width + gaps * justifyCap * fontSize), justified: true };
+    }
 
     function layoutText(using, prepared, options, role = null) {
       const result = measureParagraph(using, prepared, options);
@@ -72,10 +95,12 @@
         const below = Math.max(ink.descent * fontSize, boxBelow);
         let baseline = previous ? previous.baseline + previous.edgeBottom + leading + edgeTop : edgeTop;
         if (previous) baseline = Math.max(baseline, previous.baseline + previous.below + above);
+        const justification = capJustification(line, lineText, fontSize);
         lines.push({
           ...line,
           naturalWidth: line.width,
-          width: paintedWidth(line),
+          width: justification.width,
+          justified: justification.justified,
           top: baseline - edgeTop,
           baseline,
           glyphTop: baseline - above,
@@ -128,5 +153,5 @@
     return { name: "retain", layoutText, paragraphRhythm, codeArea, contentInsets };
   }
 
-  return { createRetainLineModel, DEFAULT_CAP_HEIGHT };
+  return { createRetainLineModel, DEFAULT_CAP_HEIGHT, justifiableGaps };
 });
