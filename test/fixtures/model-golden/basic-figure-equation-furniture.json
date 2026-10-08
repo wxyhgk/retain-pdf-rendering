@@ -1,0 +1,536 @@
+{
+ "name": "basic-figure-equation-furniture",
+ "description": "testLayout payload: title, inline TeX, tagged display equation, image with footnote, discarded header/footer/side text",
+ "layout": {
+  "pdf_info": [
+   {
+    "page_size": [
+     600,
+     800
+    ],
+    "preproc_blocks": [
+     {
+      "type": "title",
+      "bbox": [
+       50,
+       40,
+       550,
+       90
+      ],
+      "lines": [
+       {
+        "spans": [
+         {
+          "type": "text",
+          "content": "Source title"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "type": "text",
+      "bbox": [
+       50,
+       120,
+       550,
+       220
+      ],
+      "lines": [
+       {
+        "spans": [
+         {
+          "type": "text",
+          "content": "Body "
+         },
+         {
+          "type": "equation_inline",
+          "content": "x+y"
+         },
+         {
+          "type": "text",
+          "content": "."
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "type": "interline_equation",
+      "bbox": [
+       180,
+       225,
+       420,
+       255
+      ],
+      "image_path": "images/equation.png",
+      "lines": [
+       {
+        "spans": [
+         {
+          "type": "text",
+          "content": "\\\\[E = mc^2 \\\\tag{1}\\\\]"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "type": "image",
+      "bbox": [
+       100,
+       260,
+       500,
+       520
+      ],
+      "image_path": "images/figure.png",
+      "lines": [],
+      "blocks": [
+       {
+        "type": "image_footnote",
+        "bbox": [
+         348,
+         521,
+         559,
+         545
+        ],
+        "lines": [
+         {
+          "spans": [
+           {
+            "type": "text",
+            "content": "Open Access This article is licensed."
+           }
+          ]
+         }
+        ]
+       }
+      ]
+     }
+    ],
+    "discarded_blocks": [
+     {
+      "type": "header",
+      "bbox": [
+       50,
+       12,
+       250,
+       28
+      ],
+      "lines": [
+       {
+        "spans": [
+         {
+          "type": "text",
+          "content": "Journal header"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "type": "footer",
+      "bbox": [
+       50,
+       760,
+       300,
+       776
+      ],
+      "lines": [
+       {
+        "spans": [
+         {
+          "type": "text",
+          "content": "Journal footer 4/18"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "type": "footer",
+      "bbox": [
+       580,
+       200,
+       590,
+       500
+      ],
+      "lines": [
+       {
+        "spans": [
+         {
+          "type": "text",
+          "content": "Side label"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "type": "aside_text",
+      "bbox": [
+       580,
+       300,
+       590,
+       500
+      ],
+      "lines": [
+       {
+        "spans": [
+         {
+          "type": "text",
+          "content": "Watermark"
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ },
+ "modelPages": [],
+ "assetMap": {
+  "images/figure.png": "assets/figure.png"
+ },
+ "translations": {
+  "p001_b0001": "译文标题",
+  "p001_b0002": "正文 \\(x+y\\)。",
+  "p001_c0003": "开放获取：本文采用知识共享许可。"
+ },
+ "formulaReplacements": {},
+ "expected": {
+  "documentID": "basic-figure-equation-furniture",
+  "sourceFingerprint": "74fd9990b109a51c",
+  "styles": {
+   "bodyText": {
+    "fontSize": 8.4,
+    "lineHeight": 1.22
+   },
+   "referenceText": {
+    "fontSize": 7.8,
+    "lineHeight": 1.12
+   }
+  },
+  "pages": [
+   {
+    "index": 1,
+    "width": 600,
+    "height": 800,
+    "blocks": [
+     {
+      "id": "p001_b0001",
+      "page": 1,
+      "type": "title",
+      "kind": "text",
+      "bbox": [
+       50,
+       40,
+       550,
+       90
+      ],
+      "text": "Source title",
+      "translatedText": "译文标题",
+      "formulas": [],
+      "formulaItems": [],
+      "imagePath": "",
+      "imageURL": "",
+      "lineCount": 1,
+      "fontSize": 28,
+      "translatable": true
+     },
+     {
+      "id": "p001_b0002",
+      "page": 1,
+      "type": "text",
+      "kind": "text",
+      "bbox": [
+       50,
+       120,
+       550,
+       220
+      ],
+      "text": "Body \\(x+y\\).",
+      "translatedText": "正文 \\(x+y\\)。",
+      "formulas": [
+       "x+y"
+      ],
+      "formulaItems": [
+       {
+        "id": "p001_f0001",
+        "page": 1,
+        "type": "text",
+        "tex": "x+y"
+       }
+      ],
+      "imagePath": "",
+      "imageURL": "",
+      "lineCount": 1,
+      "fontSize": 18,
+      "translatable": true
+     },
+     {
+      "id": "p001_v0003",
+      "page": 1,
+      "type": "interline_equation",
+      "kind": "formula",
+      "bbox": [
+       180,
+       225,
+       420,
+       255
+      ],
+      "text": "\\\\[E = mc^2 \\\\tag{1}\\\\]",
+      "translatedText": "",
+      "formulas": [
+       "\\\\[E = mc^2 \\\\tag{1}\\\\]"
+      ],
+      "formulaItems": [
+       {
+        "id": "p001_f0002",
+        "page": 1,
+        "type": "interline_equation",
+        "tex": "\\\\[E = mc^2 \\\\tag{1}\\\\]"
+       }
+      ],
+      "imagePath": "images/equation.png",
+      "imageURL": "",
+      "lineCount": 1,
+      "fontSize": 15.273506473629427,
+      "translatable": false
+     },
+     {
+      "id": "p001_v0004",
+      "page": 1,
+      "type": "image",
+      "kind": "image",
+      "bbox": [
+       100,
+       260,
+       500,
+       520
+      ],
+      "text": "",
+      "translatedText": "",
+      "formulas": [],
+      "formulaItems": [],
+      "imagePath": "images/figure.png",
+      "imageURL": "resource://litmtrans-data/basic-figure-equation-furniture/assets/figure.png",
+      "lineCount": 1,
+      "fontSize": 18,
+      "translatable": false
+     },
+     {
+      "id": "p001_c0003",
+      "page": 1,
+      "type": "image_footnote",
+      "kind": "text",
+      "bbox": [
+       348,
+       521,
+       559,
+       545
+      ],
+      "text": "Open Access This article is licensed.",
+      "translatedText": "开放获取：本文采用知识共享许可。",
+      "formulas": [],
+      "formulaItems": [],
+      "imagePath": "",
+      "imageURL": "",
+      "lineCount": 1,
+      "fontSize": 10.996924661013189,
+      "translatable": true
+     }
+    ],
+    "restoration": {
+     "streams": [
+      {
+       "side": "full",
+       "columnKey": "full",
+       "items": [
+        {
+         "id": "p001_b0002",
+         "kind": "text",
+         "type": "text",
+         "bbox": [
+          50,
+          120,
+          550,
+          220
+         ],
+         "html": "Body <tex data-display=\"0\">x+y</tex>.",
+         "text": "Body \\(x+y\\).",
+         "translatedText": "正文 \\(x+y\\)。",
+         "roleText": "Body \\(x+y\\).",
+         "originalLineCount": 1,
+         "debugLines": [],
+         "fontEstimate": 11,
+         "side": "full",
+         "indent": 0,
+         "pageIndex": 0,
+         "debugRole": "text",
+         "tocRows": null,
+         "symbolGlossary": false,
+         "paragraphs": [],
+         "fromList": false,
+         "columnKey": "full"
+        }
+       ],
+       "bbox": [
+        50,
+        120,
+        550,
+        220
+       ],
+       "pageIndex": 0,
+       "debugRole": "text",
+       "fontSize": 7.6,
+       "lineHeight": 1.28,
+       "paragraphGap": 0.16,
+       "styleKind": "text",
+       "bodyInherited": false,
+       "refsOnly": false,
+       "equationDense": false
+      }
+     ],
+     "absoluteBlocks": [
+      {
+       "id": "p001_b0001",
+       "type": "title",
+       "kind": "text",
+       "bbox": [
+        50,
+        40,
+        550,
+        90
+       ],
+       "text": "Source title",
+       "translatedText": "译文标题",
+       "sourceHTML": "Source title",
+       "tableHTML": "",
+       "imagePath": "",
+       "imageURL": "",
+       "formulaItems": [],
+       "formulas": [],
+       "codeLanguage": "",
+       "lineCount": 1,
+       "fontSize": 13,
+       "lineHeight": 1.12,
+       "debugLines": [],
+       "mainTitle": true
+      },
+      {
+       "id": "p001_v0003",
+       "type": "interline_equation",
+       "kind": "formula",
+       "bbox": [
+        180,
+        225,
+        420,
+        255
+       ],
+       "text": "\\\\[E = mc^2 \\\\tag{1}\\\\]",
+       "translatedText": "",
+       "sourceHTML": "\\\\[E = mc^2 \\\\tag{1}\\\\]",
+       "tableHTML": "",
+       "imagePath": "",
+       "imageURL": "",
+       "formulaItems": [
+        {
+         "id": "p001_f0002",
+         "page": 1,
+         "type": "interline_equation",
+         "tex": "\\\\[E = mc^2 \\\\tag{1}\\\\]"
+        }
+       ],
+       "formulas": [
+        "\\\\[E = mc^2 \\\\tag{1}\\\\]"
+       ],
+       "codeLanguage": "",
+       "lineCount": 1,
+       "fontSize": 11,
+       "lineHeight": 1.12,
+       "debugLines": [],
+       "numberRight": 550
+      },
+      {
+       "id": "p001_c0003",
+       "type": "image_footnote",
+       "kind": "text",
+       "bbox": [
+        348,
+        521,
+        559,
+        545
+       ],
+       "text": "Open Access This article is licensed.",
+       "translatedText": "开放获取：本文采用知识共享许可。",
+       "sourceHTML": "Open Access This article is licensed.",
+       "tableHTML": "",
+       "imagePath": "",
+       "imageURL": "",
+       "formulaItems": [],
+       "formulas": [],
+       "codeLanguage": "",
+       "lineCount": 1,
+       "fontSize": 7.2,
+       "lineHeight": 1.2,
+       "debugLines": []
+      },
+      {
+       "id": "",
+       "type": "page_header",
+       "kind": "text",
+       "bbox": [
+        50,
+        12,
+        250,
+        28
+       ],
+       "text": "Journal header",
+       "translatedText": "",
+       "sourceHTML": "Journal header",
+       "tableHTML": "",
+       "imagePath": "",
+       "imageURL": "",
+       "formulaItems": [],
+       "formulas": [],
+       "codeLanguage": "",
+       "lineCount": 1,
+       "fontSize": 11,
+       "lineHeight": 1.12,
+       "debugLines": [],
+       "sourceOnly": true
+      },
+      {
+       "id": "",
+       "type": "page_footer",
+       "kind": "text",
+       "bbox": [
+        50,
+        760,
+        300,
+        776
+       ],
+       "text": "Journal footer 4/18",
+       "translatedText": "",
+       "sourceHTML": "Journal footer 4/18",
+       "tableHTML": "",
+       "imagePath": "",
+       "imageURL": "",
+       "formulaItems": [],
+       "formulas": [],
+       "codeLanguage": "",
+       "lineCount": 1,
+       "fontSize": 10,
+       "lineHeight": 1.12,
+       "debugLines": [],
+       "sourceOnly": true
+      }
+     ],
+     "ocrBoxes": []
+    }
+   }
+  ]
+ }
+}
