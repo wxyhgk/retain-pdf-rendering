@@ -623,6 +623,6 @@
 
   return {
     prepare, layout, naturalWidth, lineWidthEm, lineEndAdjustEm, breakOpportunities, uax14Breaks,
-    isSpace, OBJECT, LINE_SEPARATOR
+    justifiableGaps, isSpace, OBJECT, LINE_SEPARATOR
   };
 });
