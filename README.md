@@ -79,7 +79,7 @@ measurer.fitFontSize(prepared, { width: 240, maxHeight: 80, lineHeight: 1.2, min
   → `{ lines: [{ start, end, width, x, top, baseline, ascent, descent, glyphTop, glyphBottom, justified, available, forced }], height, maxLineWidth, leading }`。长度单位与版面模型一致（源页面 px = Typst pt）。`glyphTop` / `glyphBottom` 是该行字形（含行内公式盒）的上下沿，供碰撞检查使用。
 - `fitFontSize(prepared, { width, maxHeight, maxWidth?, lineHeight, minFont, maxFont, step = 0.1, ...layout 选项 })` → `{ fontSize, layout, fits, probes }`：步进阶梯上能放下的最大字号。二分查找假定高度随字号单调不减；贪心断行可能局部违反这一点，因此结果的上一级会再验证一次，若仍能放下则继续向上走。随机测试中平均每段 6.8 次排版（全扫约 83 次）。
 - `naturalWidth(prepared, { fontSize, ... })`：不折行时的宽度（单行节点）。`lineRuns(prepared, start, end)`：某一行的 run，供输出端逐行绘制。
-- `contentFromText(text, { renderMathBox })`：识别 `\(..\)`、`\[..\]`、`$$..$$`、`$..$`（`\$` 不算公式）。`renderMathBox(tex, display)` 返回 `{ widthEm, heightEm, depthEm }`；返回 null 或抛出异常时使用原文 LaTeX 兜底盒（等宽 0.8em，与参考 Typst 输出一致）。
+- `contentFromText(text, { renderMathBox })`：从左到右扫描 `\(..\)`、`\[..\]`、`$$..$$`、`$..$`（参照 retain-pdf 的 `text_tokens.py`）：相邻公式 `$a$$b$` 是两个公式；公式内 `\$` 不结束公式，正文里的 `\$` 是字面美元符号；`$ x $` 去掉两侧空白；空公式、跨行或超过 1200 字符的 `$` 保持为文字；`$` 个数为奇数时，`$5`、`US$12` 这类货币写法按文字处理。公式先经 `normalizeTeX`（`\AA`→Å、`\L`→Ł 等）。`renderMathBox(tex, display)` 返回 `{ widthEm, heightEm, depthEm }`；返回 null、抛出异常或没有提供渲染器时，该公式作为普通文字（其 TeX，不带分隔符）按正文字体测量和输出。`failedMath: "box"` 可恢复旧的原文 LaTeX 兜底盒。`Text.scanMath`、`Text.normalizeTeX` 也单独导出。
 
 **行高换算**：Typst 输出中一行文字在基线上方占 `ascender`、下方占 `descender`（思源宋体合计 1em），行内公式盒可撑高该行，相邻行之间是 `par(leading)`。CSS 式行高比例换算为 `leading = max(0, (lineHeight - 1) × fontSize)`，因此 n 行纯文字段落高 `n × fontSize + (n - 1) × leading`，比 CSS 少一个 leading（CSS 在首行上方、末行下方各多留半个）。`height` 是 Typst 块高度。
 

@@ -207,7 +207,7 @@ test("fitFontSize: binary search returns a fitting size whose next step does not
   assert.ok(nonMonotonic <= cases * 0.05, `${nonMonotonic} non-monotonic cases`);
 });
 
-test("contentFromText: delimiters, display math, escaped dollars and the fallback box", () => {
+test("contentFromText: delimiters, display math, escaped dollars and failed formulas", () => {
   const seen = [];
   const runs = Text.contentFromText("a $x$ b \\(y\\) c \\[z\\] d $$w$$ e \\$5 and $ 6", {
     renderMathBox(tex, display) {
@@ -218,10 +218,9 @@ test("contentFromText: delimiters, display math, escaped dollars and the fallbac
   });
   assert.deepEqual(seen, [["x", false], ["y", false], ["z", true], ["w", true]]);
   const maths = runs.filter(run => run.type === "math");
-  assert.equal(maths.length, 4);
-  assert.equal(maths[3].fallback, true, "a throwing renderer falls back to the raw-LaTeX box");
-  assert.ok(Math.abs(maths[3].widthEm - 0.602 * 0.8 * "$$w$$".length) < 1e-12);
-  assert.ok(runs[runs.length - 1].text.endsWith("\\$5 and $ 6"));
+  assert.equal(maths.length, 3, "a throwing renderer leaves the formula as text");
+  assert.ok(runs.some(run => run.type === "text" && run.text === "w"), "failed TeX is kept without its delimiters");
+  assert.ok(runs[runs.length - 1].text.endsWith("$5 and $ 6"), "\\$ outside math is a literal dollar; a lone $ stays text");
 });
 
 test("the text modules run as plain scripts without Node APIs (browser/Zotero path)", () => {

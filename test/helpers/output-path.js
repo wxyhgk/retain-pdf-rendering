@@ -21,7 +21,8 @@ function mathRenderer() {
 function renderMathBox(tex, display) {
   const mathjax = mathRenderer();
   const box = mathjax ? mathjax.renderMathBox(tex, display) : null;
-  return box || Text.fallbackMathBox(display ? `$$${tex}$$` : `$${tex}$`);
+  // Unrenderable formulas stay text (content.js textToRuns).
+  return box || null;
 }
 
 function createOutputFitter() {

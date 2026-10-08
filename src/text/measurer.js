@@ -274,14 +274,119 @@
     return { metrics: fontMetrics, prepare, layout, fitFontSize, naturalWidth, lineRuns };
   }
 
-  const MATH_PATTERN = /\\\(([\s\S]+?)\\\)|\\\[([\s\S]+?)\\\]|\$\$([\s\S]+?)\$\$|(?<![\\$])\$(?!\s)([^$\n]+?)(?<!\s)\$/g;
+  // ----- TeX math delimiters -----
+  //
+  // A left-to-right scanner, modelled on retain-pdf's
+  // render/layout/text_tokens.py (the tokenizer behind its translations):
+  //   - `\(..\)` inline, `\[..\]` display, `$$..$$` display, `$..$` inline.
+  //   - Inside math a backslash escapes the next character, so `$\$1.4$` is one
+  //     formula and `\{`/`\}` never close anything.
+  //   - Formulas are consumed in order, so adjacent formulas (`$a$$b$`) parse
+  //     as two inline formulas, not as "a closing `$` followed by `$`".
+  //   - Inline math may be padded (`$ \geq $`): the body is trimmed. An empty
+  //     body, a newline before the closing `$`, or more than
+  //     MAX_INLINE_MATH_CHARS characters leaves the opening `$` as text.
+  //   - Outside math `\$` is a literal dollar sign.
+  //   - Only when a text has an odd number of unescaped `$` (pairing is
+  //     ambiguous) are currency-like dollars (`$5`, `US$12`) taken literally
+  //     first; balanced texts are never second-guessed.
+  // Corpus behind these rules: experiments/math-delims (31 retain-pdf jobs).
+  const MAX_INLINE_MATH_CHARS = 1200;
+
+  function isEscapedAt(text, index) {
+    let count = 0;
+    for (let cursor = index - 1; cursor >= 0 && text[cursor] === "\\"; cursor--) count += 1;
+    return count % 2 === 1;
+  }
+
+  // Index just past the closing delimiter, or -1. Escapes are skipped.
+  function findMathClose(text, from, close, { stopAtNewline = false, maxChars = Infinity } = {}) {
+    for (let cursor = from; cursor < text.length; cursor++) {
+      if (cursor - from > maxChars) return -1;
+      const char = text[cursor];
+      if (stopAtNewline && char === "\n") return -1;
+      if (char === "\\" && !(close.startsWith("\\") && text.startsWith(close, cursor))) { cursor += 1; continue; }
+      if (text.startsWith(close, cursor)) return cursor + close.length;
+    }
+    return -1;
+  }
+
+  // Dollars that read as currency: `$` + digit, preceded by start, whitespace,
+  // an opening bracket or a currency prefix (US$, HK$, A$, C$).
+  function currencyDollars(text) {
+    const set = new Set();
+    const pattern = /(?:^|(?<=[\s(\uff08,\uff0c:\uff1a;\uff1b]|US|HK|A|C|NZ|S))\$(?=\d)/g;
+    for (const match of text.matchAll(pattern)) set.add(match.index);
+    return set;
+  }
+
+  // text -> [{ type: "text", text } | { type: "math", tex, display, raw, start, end }]
+  function scanMath(input) {
+    const text = String(input ?? "");
+    const segments = [];
+    let plain = "";
+    const flush = () => { if (plain) segments.push({ type: "text", text: plain }); plain = ""; };
+    let unescaped = 0;
+    for (let index = 0; index < text.length; index++) if (text[index] === "$" && !isEscapedAt(text, index)) unescaped += 1;
+    const literalDollars = unescaped % 2 === 1 ? currencyDollars(text) : new Set();
+    const pushMath = (start, end, open, close, display) => {
+      const body = text.slice(start + open, end - close);
+      if (!body.trim()) return false;
+      flush();
+      segments.push({ type: "math", tex: body.trim(), display, raw: text.slice(start, end), start, end });
+      return true;
+    };
+    let index = 0;
+    while (index < text.length) {
+      const char = text[index];
+      if (char === "\\" && (text[index + 1] === "(" || text[index + 1] === "[")) {
+        const display = text[index + 1] === "[";
+        const end = findMathClose(text, index + 2, display ? "\\]" : "\\)");
+        if (end > 0 && pushMath(index, end, 2, 2, display)) { index = end; continue; }
+      }
+      if (char === "\\" && text[index + 1] === "$") { plain += "$"; index += 2; continue; }
+      if (char === "\\") { plain += text.slice(index, index + 2); index += 2; continue; }
+      if (char === "$" && !literalDollars.has(index)) {
+        if (text[index + 1] === "$") {
+          const end = findMathClose(text, index + 2, "$$");
+          if (end > 0 && pushMath(index, end, 2, 2, true)) { index = end; continue; }
+        }
+        else {
+          const end = findMathClose(text, index + 1, "$", { stopAtNewline: true, maxChars: MAX_INLINE_MATH_CHARS });
+          if (end > 0 && pushMath(index, end, 1, 1, false)) { index = end; continue; }
+        }
+      }
+      plain += char;
+      index += 1;
+    }
+    flush();
+    return segments;
+  }
+
+  // TeX the renderer does not know but whose intent is unambiguous.
+  // (retain-pdf does the Angstrom part in
+  // render/layout/inline_content/core/inline_math.py.)
+  function normalizeTeX(tex) {
+    return String(tex || "")
+      .replace(/\\(AA)(?![A-Za-z])(?:\{\})?/g, "\u00c5")
+      .replace(/\\(aa)(?![A-Za-z])(?:\{\})?/g, "\u00e5")
+      .replace(/\\L(?![A-Za-z])(?:\{\})?/g, "\u0141")
+      .replace(/\\l(?![A-Za-z])(?:\{\})?/g, "\u0142")
+      // `x'_{i}'`: a second prime after a subscript is a double superscript
+      // in TeX; give it an empty base like LaTeX users write by hand.
+      .replace(/('+_(?:\{[^{}]*\}|[A-Za-z0-9]))'/g, "$1{}'");
+  }
 
   // "text \(x\) more\nnext line" -> runs. renderMathBox(tex, display) returns
-  // { widthEm, heightEm, depthEm } (or null / throws for an unrenderable
-  // formula, which then gets the raw-LaTeX fallback box).
+  // { widthEm, heightEm, depthEm }, or null / throws / a box flagged
+  // `fallback` for a formula it cannot render. Such a formula becomes plain
+  // text (its normalized TeX, no delimiters), measured and painted in the
+  // body font like any other text; options.failedMath "box" restores the old
+  // raw-LaTeX fallback box instead. Without a renderer every formula counts
+  // as failed.
   function contentFromText(input, options = {}) {
-    const text = String(input ?? "");
     const renderMathBox = typeof options.renderMathBox === "function" ? options.renderMathBox : null;
+    const failedAsBox = options.failedMath === "box";
     const runs = [];
     const pushText = value => {
       const parts = value.split(/\r\n?|\n|\u2028/);
@@ -290,28 +395,20 @@
         if (part) runs.push({ type: "text", text: part });
       });
     };
-    let last = 0;
-    for (const match of text.matchAll(MATH_PATTERN)) {
-      if (match.index > last) pushText(text.slice(last, match.index));
-      const display = match[2] !== undefined || match[3] !== undefined;
-      const tex = match[1] ?? match[2] ?? match[3] ?? match[4];
+    for (const segment of scanMath(input)) {
+      if (segment.type === "text") { pushText(segment.text); continue; }
+      const tex = normalizeTeX(segment.tex);
+      const display = segment.display;
       let box = null;
       if (renderMathBox) {
         try { box = renderMathBox(tex, display); }
         catch (_) { box = null; }
       }
-      const valid = box && [box.widthEm, box.heightEm, box.depthEm].every(value => Number.isFinite(Number(value)));
-      runs.push({
-        type: "math",
-        tex,
-        display,
-        ...(valid
-          ? { widthEm: Number(box.widthEm), heightEm: Number(box.heightEm), depthEm: Number(box.depthEm) }
-          : fallbackMathBox(display ? `$$${tex}$$` : `$${tex}$`))
-      });
-      last = match.index + match[0].length;
+      const valid = box && !box.fallback && [box.widthEm, box.heightEm, box.depthEm].every(value => Number.isFinite(Number(value)));
+      if (valid) runs.push({ type: "math", tex, display, widthEm: Number(box.widthEm), heightEm: Number(box.heightEm), depthEm: Number(box.depthEm) });
+      else if (failedAsBox) runs.push({ type: "math", tex, display, ...fallbackMathBox(display ? `$$${tex}$$` : `$${tex}$`) });
+      else pushText(tex.replace(/\s*[\r\n]+\s*/g, " "));
     }
-    if (last < text.length) pushText(text.slice(last));
     return runs;
   }
 
@@ -319,6 +416,8 @@
     createMeasurer,
     createMetrics: Metrics.createMetrics,
     contentFromText,
+    scanMath,
+    normalizeTeX,
     fallbackMathBox,
     isSpace,
     _internal: { Linebreak, Metrics, stepLadder }

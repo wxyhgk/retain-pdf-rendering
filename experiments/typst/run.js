@@ -322,7 +322,8 @@ function runModelFitter({ options, fixture, model, mode, out, maths, nodesByPage
   const renderMathBox = (tex, display) => {
     const entry = maths.get(tex, display);
     if (entry.ok) return { widthEm: entry.widthEm, heightEm: entry.heightEm, depthEm: entry.depthEm };
-    return Text.fallbackMathBox(display ? `$$${tex}$$` : `$${tex}$`);
+    // Unrenderable: the fitter's content path keeps the TeX as plain text.
+    return null;
   };
   const fitter = FitModel.createModelFitter({
     ...(options.typography === "retain" ? { typography: "retain" } : {}),

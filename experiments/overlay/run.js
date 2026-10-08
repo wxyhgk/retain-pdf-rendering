@@ -24,6 +24,12 @@ const { overlayDocument } = require("./emit-overlay");
 
 const PYTHON = process.env.RPR_PYTHON || path.resolve(__dirname, "../../../retain-pdf/backend/.venv/bin/python");
 
+// `--preset retain`: the full retain-pdf-style configuration in one flag.
+// Flags given after it override individual settings.
+const PRESETS = {
+  retain: { typography: "retain", seed: "geometry" }
+};
+
 function parseArgs(argv) {
   const options = { job: "", out: "", pages: Infinity, png: [], driftCheck: true, inheritBelow: 0.85, limiterRounds: 0, bodyMaxFactor: 1, strictSourceFit: true, bodyLineHeight: 1.25, fontCaps: true };
   for (let i = 0; i < argv.length; i++) {
@@ -37,6 +43,11 @@ function parseArgs(argv) {
     else if (value === "--body-max-factor") options.bodyMaxFactor = Number(argv[++i]);
     else if (value === "--allow-spill") options.strictSourceFit = false;
     else if (value === "--body-line-height") options.bodyLineHeight = Number(argv[++i]);
+    else if (value === "--preset") {
+      const preset = PRESETS[argv[++i]];
+      if (!preset) throw new Error(`unknown preset ${argv[i]} (known: ${Object.keys(PRESETS).join(", ")})`);
+      Object.assign(options, preset);
+    }
     else if (value === "--typography") options.typography = argv[++i];
     else if (value === "--seed") options.seed = argv[++i];
     else if (value === "--retain-band-fit") options.retainBandFit = true;
@@ -102,13 +113,12 @@ print(json.dumps(out))
   const renderMathBox = (tex, display) => {
     const entry = maths.get(tex, display);
     if (entry.ok) return { widthEm: entry.widthEm, heightEm: entry.heightEm, depthEm: entry.depthEm };
-    return Text.fallbackMathBox(display ? `$$${tex}$$` : `$${tex}$`);
+    // A formula MathJax cannot render: Text.contentFromText keeps it as
+    // plain text in the body font.
+    return null;
   };
   const base = Text.createMeasurer({ metrics: defaultFontTable() });
-  // retain-pdf writes inline math as "$ x_{2} $"; contentFromText (like
-  // Markdown) only accepts "$x_{2}$", so trim the padding first.
-  const tightenMath = text => String(text || "").replace(/(?<!\$)\$(?!\$)[ \t]*([^$\n]*?[^\s$])[ \t]*\$(?!\$)/g, (_, tex) => `$${tex}$`);
-  const runsForText = text => Text.contentFromText(tightenMath(text), { renderMathBox })
+  const runsForText = text => Text.contentFromText(text, { renderMathBox })
     .map(run => (run.type === "math" ? { ...run, display: false } : run));
   started = performance.now();
   const { model, paint, stats } = buildModel(job, {
