@@ -322,6 +322,38 @@
     }
   }
 
+  function applyFormulaScale(formula, scale) {
+    formula.style.transform = Math.abs(scale - 1) > 0.005 ? `scale(${scale.toFixed(4)})` : "";
+  }
+
+  function formulaGrowthCollides(page, block, formula) {
+    const formulaBox = formula.getBoundingClientRect();
+    if (formulaBox.width <= 0 || formulaBox.height <= 0) return false;
+    const neighbours = [...page.querySelectorAll(":scope > .layout-flow-stream, :scope > .layout-block")]
+      .filter(node => node !== block && !node.hidden && node.getClientRects().length);
+    for (const node of neighbours) {
+      for (const rect of layoutTextRects(node)) {
+        if (layoutRectsOverlap(formulaBox, rect)) return true;
+      }
+    }
+    return false;
+  }
+
+  // Binary-search the largest scale in (fitted, wanted] that keeps the formula
+  // clear of neighbouring glyphs; the fitted scale is the safe floor.
+  function largestClearFormulaScale(page, block, formula, fitted, wanted) {
+    let low = fitted;
+    let high = wanted;
+    for (let step = 0; step < 8 && high - low > 0.005; step += 1) {
+      const middle = (low + high) / 2;
+      applyFormulaScale(formula, middle);
+      if (formulaGrowthCollides(page, block, formula)) high = middle;
+      else low = middle;
+    }
+    applyFormulaScale(formula, low);
+    return low;
+  }
+
   function fitLayoutFormulas(pages, { expand = false } = {}) {
     for (const page of (pages || []).filter(Boolean)) {
       const formulas = [...page.querySelectorAll(".layout-block.layout-formula")];
@@ -367,7 +399,9 @@
         }
 
         const scaleW = maxFormulaWidth / Math.max(1, formulaRect.width);
-        let scale = Math.min(1, scaleW);
+        // The shrink-only scale is what the text fitter measured against.
+        const fittedScale = Math.min(1, scaleW);
+        let scale = fittedScale;
 
         if (expand && blockRect.height > 0 && formulaRect.height > 0) {
           const targetHeight = blockRect.height * 0.92;
@@ -377,6 +411,12 @@
 
         if (Math.abs(scale - 1) > 0.005) {
           formula.style.transform = `scale(${scale.toFixed(4)})`;
+        }
+        // This pass runs after text fitting, so neighbouring text cannot move
+        // out of the way any more. Growth beyond the fitted scale must stay
+        // clear of every other block's glyphs.
+        if (expand && scale > fittedScale + 0.005 && formulaGrowthCollides(page, block, formula)) {
+          scale = largestClearFormulaScale(page, block, formula, fittedScale, scale);
         }
         block.classList.toggle("layout-fitted", scale < .999);
         if (isDevelopmentMode() || document.body.classList.contains("layout-debug")) {

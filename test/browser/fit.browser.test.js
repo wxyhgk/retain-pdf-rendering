@@ -31,14 +31,7 @@ const updateSnapshots = process.env.UPDATE_SNAPSHOTS === "1";
 // `${fixture}/${mode}/${invariant}`. A listed failure in one of the listed
 // browsers is reported as a todo instead of failing the run; the snapshot is
 // still written and compared.
-const KNOWN_ISSUES = {
-  "two-column-article/source/collision": {
-    browsers: ["chromium"],
-    reason: "fitLayoutPages() runs the formula expand post-pass (scale up to 1.35x) after the final " +
-      "text collision audit. p001_v0009 grows into the last line of body stream p001_b0007, which " +
-      "was fitted against the unscaled formula. Firefox's line metrics leave enough room; Chromium's do not."
-  }
-};
+const KNOWN_ISSUES = {};
 
 const fixtures = fs.readdirSync(fixtureDir)
   .filter(name => name.endsWith(".json"))
