@@ -94,7 +94,7 @@
       // against them, not against seed sizes); their safety net runs once the
       // body has settled.
       retainBody.scheduleNonBody();
-      retainBody.fitBody();
+      retainBody.fitBody(steps.retainSmoothing || null);
       retainBody.repairNonBody();
       // Headings were sized from their boxes; now that the body has settled,
       // back them off where their ink still touches something.
