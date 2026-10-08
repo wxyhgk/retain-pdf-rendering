@@ -79,14 +79,36 @@ function fits(node, metrics, size, ratio, allowed) {
   return stackHeight(node, metrics, size, ratio) <= allowed + TOLERANCE;
 }
 
+// Largest size on the ladder for which every node fits. Binary search
+// (height grows with size); the step above the result is verified and the
+// search walks up while it still fits, since greedy line breaking can make
+// the height locally non-monotonic.
 function largestSize(nodes, sizes, ok) {
-  let best = null;
-  for (const size of sizes) if (nodes.every(node => ok(node, size))) best = size;
-  return best ?? sizes[0];
+  if (!sizes.length) return null;
+  const memo = new Map();
+  const allFit = index => {
+    if (!memo.has(index)) memo.set(index, nodes.every(node => ok(node, sizes[index])));
+    return memo.get(index);
+  };
+  if (!allFit(0)) return sizes[0];
+  let low = 0;
+  let high = sizes.length - 1;
+  if (allFit(high)) low = high;
+  else {
+    while (high - low > 1) {
+      const middle = (low + high) >> 1;
+      if (allFit(middle)) low = middle;
+      else high = middle;
+    }
+  }
+  while (low + 1 < sizes.length && allFit(low + 1)) low += 1;
+  return sizes[low];
 }
 
-function solveStyles(nodesByPage, pages, values, modelStyles) {
-  const index = indexMeasurements(values);
+// measurements: the Typst query's records, or a function
+// metricsAt(node, size) -> [{ h0, lines, natural }] that measures lazily.
+function solveStyles(nodesByPage, pages, measurements, modelStyles) {
+  const index = typeof measurements === "function" ? null : indexMeasurements(measurements);
   const all = nodesByPage.flat().filter(node => node.paragraphs?.length && node.render !== "formula");
   const allowedOf = new Map();
   nodesByPage.forEach((nodes, pageIndex) => {
@@ -99,7 +121,7 @@ function solveStyles(nodesByPage, pages, values, modelStyles) {
   });
   const styles = new Map();
   const decisions = {};
-  const metricsAt = (node, size) => nodeMetrics(index, node, size);
+  const metricsAt = index ? (node, size) => nodeMetrics(index, node, size) : measurements;
 
   // Body: one size for every non-inherited body stream, never above the
   // model's solved document style; each stream then gets the largest line

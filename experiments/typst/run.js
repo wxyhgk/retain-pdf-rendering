@@ -141,7 +141,14 @@ function main() {
     .map(node => ({ node, sizes: sizesFor(node) }));
   let measured;
   let measureComparison = null;
-  if (options.measurer === "js" || options.measurer === "both") {
+  if (options.measurer === "js") {
+    // Lazy: the fitter lays a paragraph out only at the sizes it probes.
+    const mathBefore = maths.stats.ms;
+    const provider = jsMeasurer.createProvider(jobs.map(job => job.node), maths);
+    timings.jsPrepareMs = Math.round(provider.stats.prepareMs - (maths.stats.ms - mathBefore));
+    measured = { values: provider.metricsAt, provider };
+  }
+  else if (options.measurer === "both") {
     const mathBefore = maths.stats.ms;
     const js = jsMeasurer.measureJobs(jobs, maths);
     timings.jsMeasureMs = Math.round(js.ms - (maths.stats.ms - mathBefore));
@@ -178,6 +185,12 @@ function main() {
   started = performance.now();
   const { styles, decisions, conflicts } = solveStyles(nodesByPage, model.pages, measured.values, model.styles);
   timings.fitMs = Math.round(performance.now() - started);
+  if (measured.provider) {
+    // Measurement happens inside the fit; report it separately.
+    timings.jsMeasureMs = Math.round(measured.provider.stats.ms);
+    timings.jsLayouts = measured.provider.stats.layouts;
+    timings.fitMs = Math.max(0, timings.fitMs - timings.jsMeasureMs);
+  }
 
   // 3. Output document + PDF.
   started = performance.now();
@@ -193,14 +206,15 @@ function main() {
   // exactly one text line inside its node's column.
   let drift = null;
   if (options.measurer !== "typst" && !options.noDriftCheck) {
-    const { layout } = require("../measure/linebreak");
+    const measurer = jsMeasurer.loadMeasurer();
     const expected = [];
     nodesByPage.forEach((nodes, pageIndex) => {
       for (const node of nodes) {
         const style = styles.get(node.uid);
         if (!node.prepared || node.single || !style) continue;
         const width = node.contentBox[2] - node.contentBox[0];
-        const lines = node.prepared.reduce((sum, prepared) => sum + layout(prepared, style.size, width).lines.length, 0);
+        const lines = node.prepared.reduce((sum, { prepared, options: layoutOptions }) =>
+          sum + measurer.layout(prepared, { ...layoutOptions, fontSize: style.size, width }).lines.length, 0);
         expected.push({ page: pageIndex, key: node.key, lines, x0: node.contentBox[0], x1: node.contentBox[2], y0: node.contentBox[1], y1: node.contentBox[1] + (node.renderedHeight || 0), size: style.size });
       }
     });
@@ -271,7 +285,7 @@ open(f"{sys.argv[2]}/text.txt", "w").write("\\n\\f\\n".join(texts))
     drift,
     typst: { binary: typst.TYPST, fonts: typst.FONT_DIR, invocations: typst.invocations },
     timings,
-    measurements: measured.values.length,
+    measurements: measured.provider ? measured.provider.stats.layouts : measured.values.length,
     decisions,
     conflicts,
     formulas: { rendered: maths.stats.formulas, failed: maths.stats.failed, copiedOutOfPdf: formulasInText },

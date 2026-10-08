@@ -1,11 +1,24 @@
 # Pure-JS text measurement (experiment)
 
+> **Moved to production.** The measurer now lives in `src/text/`
+> (`RetainPdfRendering.Text`, see the main README); this directory keeps the
+> prototype glue (`measurer.js` provider, `emit-lines.js`, `compare-typst.js`).
+> Since moving: the UAX #14 tables are generated into `src/text/uax14-data.js`
+> (no `linebreak` runtime dependency), the fitter's size search is binary
+> (300 pages: 418,000 → 27,724 paragraph layouts, measurement 5.4 s → 0.7 s,
+> identical output), and two break rules were corrected against Typst — inline
+> boxes follow ICU's LB20 (break before NS/BA/HY/IN/PO and after PR/BB next to
+> a formula box) and `”` keeps only a following letter/number (LB30), so it
+> breaks before `“`, `(`, `[` and `—`. Targeted probes:
+> `probes/box-and-quote.json`.
+
+
 Replaces the Typst `measure` query of `experiments/typst` with our own line
 layout. Typst is only used to typeset the final PDF, and it is told the line
 breaks explicitly, so the output cannot drift from the measurement.
 
 ```
-node experiments/measure/build-advance-table.js           # font -> data/source-han-serif-sc-regular.json
+node scripts/build-advance-table.js                        # font -> data/fonts/source-han-serif-sc-regular.json
 node experiments/measure/compare-typst.js [--table T]     # parity with Typst's own line breaking
 node experiments/typst/run.js <fixture> --measurer js     # pipeline: JS measure -> fit -> explicit lines -> Typst
 node experiments/typst/run.js <fixture> --measurer both   # also runs the Typst query and compares
@@ -15,16 +28,16 @@ node experiments/typst/run.js <fixture> --measurer both   # also runs the Typst 
 
 | File | Role |
 |---|---|
-| `font-metrics.js` | Advances, pair deltas (kerning + contextual substitutions), ligatures, per shaping mode. From the font (fontkit, dev) or from the compact table (runtime). |
-| `build-advance-table.js` | Extracts that table: 405 KB JSON, 66 KB gzip, 23 KB brotli for Source Han Serif SC Regular (vs 23 MB OTF). 19 s. |
-| `linebreak.js` | Typst `linebreaks: "simple"` reproduced: break opportunities, CJK/Latin adjustments, greedy fill, line heights. |
+| `src/text/metrics.js` | (moved to production) Advances, pair deltas (kerning + contextual substitutions), ligatures, per shaping mode, from the compact table `data/fonts/*.json`. |
+| `scripts/build-advance-table.js` | (moved) Extracts that table: 405 KB JSON, 66 KB gzip, 23 KB brotli for Source Han Serif SC Regular (vs 23 MB OTF). 19 s. |
+| `src/text/linebreak.js` | (moved to production) Typst `linebreaks: "simple"` reproduced: break opportunities, CJK/Latin adjustments, greedy fill, line heights. |
 | `measurer.js` | Drop-in for the Typst query: `{ id, para, size, h0, h1, natural }` records for the fitter. |
 | `emit-lines.js` | Output with explicit lines (one single-line block per line, stacked with the paragraph leading). |
 | `compare-typst.js` | Parity harness: every fixture paragraph (+ demo inline math + random stress paragraphs) at several sizes, Typst vs JS, line by line. |
 
 ## What had to match Typst (all verified with `compare-typst.js`)
 
-Shaping (`font-metrics.js`)
+Shaping (`src/text/metrics.js`)
 - Typst shapes with `lang: "zh"`; harfbuzz picks the run's script from its first
   character with a concrete script. Source Han Serif registers ZHS under every
   concrete script and none under DFLT, so there are two modes: **zh** (`locl`:
@@ -34,7 +47,7 @@ Shaping (`font-metrics.js`)
   shaped pair − both advances" (kerning and contextual substitutions alike); a
   pair shaping to one glyph is a ligature (fi, fl, ff, ffi, ffl, ——, …).
 
-Line widths (`linebreak.js`, from Typst's `shaping.rs` / `line.rs`)
+Line widths (`src/text/linebreak.js`, from Typst's `shaping.rs` / `line.rs`)
 - CJK–Latin autospacing: +¼ em between a Han/kana glyph and an adjacent
   Latin/Greek/Cyrillic letter or digit, removed at line boundaries.
 - Consecutive CJK punctuation shares half a glyph (GB style); closing
@@ -97,7 +110,7 @@ in its column): 0 mismatches over 6 fixtures × 2 modes (132 nodes) and over the
   Serif SC are untested. The break-opportunity adjustments are empirical
   (observed Typst 0.15.1 behaviour), not a full ICU implementation; a real
   ICU4X segmenter (WASM) would remove that guesswork.
-- Pair data covers the "Latin-side" repertoire in `build-advance-table.js`;
+- Pair data covers the "Latin-side" repertoire in `scripts/build-advance-table.js`;
   characters outside it get no kerning (none of them kern in this font's CJK range).
 - Hyphenation is not modelled (`lang: "zh"` disables it in Typst too).
 - Measurement evaluates every size of the fitter's ladder (≈ 85 per paragraph);

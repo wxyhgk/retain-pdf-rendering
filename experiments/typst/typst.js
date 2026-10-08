@@ -34,4 +34,9 @@ function compile(file, output, cwd) {
   return run(["compile", file, output], cwd);
 }
 
-module.exports = { queryMeasurements, compile, invocations, TYPST, FONT_DIR };
+function version() {
+  const result = spawnSync(TYPST, ["--version"], { encoding: "utf8" });
+  return result.status === 0 ? result.stdout.trim() : "";
+}
+
+module.exports = { queryMeasurements, compile, version, invocations, TYPST, FONT_DIR };
