@@ -151,9 +151,15 @@ function main() {
     result.pages.forEach((page, pageIndex) => {
       for (const node of page.nodes) {
         if (overlapping.has(node.id)) { unchecked += 1; continue; }
-        const lines = node.lines.filter(line => flatten(node.paragraphs[line.paragraph].runs).text.slice(line.start, line.end).replace(/[\s\u2028]/g, "").length > 0);
+        // Only lines holding text: a formula-only line draws no text glyphs at
+        // the block's size (its copyable LaTeX layer is sized to the formula).
+        const OBJECT = String.fromCharCode(0xfffc);
+        const lines = node.lines.filter(line => flatten(node.paragraphs[line.paragraph].runs).text.slice(line.start, line.end).replace(/[\s\u2028]/g, "").split(OBJECT).join("").length > 0);
         if (!lines.length) continue;
-        expected.push({ page: pageIndex, key: node.id, lines: lines.length, size: node.fontSize,
+        // Rows closer than half a line are one row, unless the block's own
+        // pitch is tighter than that.
+        const pitch = Math.min(...lines.slice(1).map((line, k) => line.baseline - lines[k].baseline), Infinity);
+        expected.push({ page: pageIndex, key: node.id, lines: lines.length, size: node.fontSize, gap: Math.min(node.fontSize * 0.5, pitch * 0.5),
           x0: Math.min(...lines.map(l => l.x)), x1: Math.max(...lines.map(l => l.x + l.width)),
           y0: Math.min(...lines.map(l => l.baseline)), y1: Math.max(...lines.map(l => l.baseline)) });
       }
@@ -173,7 +179,7 @@ for e in expected:
                         ys.append(oy)
     ys.sort(); rows = []
     for y in ys:
-        if not rows or y - rows[-1] > e["size"] * 0.5: rows.append(y)
+        if not rows or y - rows[-1] > e["gap"]: rows.append(y)
     if len(rows) != e["lines"]: bad.append({"key": e["key"], "page": e["page"] + 1, "expected": e["lines"], "rendered": len(rows)})
 print(json.dumps({"nodes": len(expected), "mismatch": bad}))
 `, [path.join(options.out, "overlay.pdf"), path.join(options.out, "expected-lines.json")]));

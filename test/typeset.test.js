@@ -90,3 +90,20 @@ test("typeset: bold blocks are measured with the bold table; output is determini
   assert.ok(bold.lines[0].naturalWidth > regular.lines[0].naturalWidth, "bold Latin is wider");
   assert.deepEqual(engine.typeset(page([block])), engine.typeset(page([block])));
 });
+
+test("typeset: optimized breaking (the default) may shrink a line's spaces to fit, as Typst does", () => {
+  const sentence = "The shock wave travels through water at about two kilometres per second.";
+  const prepared = measurer.prepare(runs(sentence));
+  const natural = measurer.layout(prepared, { fontSize: 10, width: 10000, align: "left" }).lines[0].width;
+  // 0.8 pt narrower than the sentence: Typst lets each space shrink to 2/3.
+  const block = { id: "a", box: [50, 100, 50 + natural - 0.8, 200], paragraphs: [{ runs: runs(sentence) }], fontSize: 10, lineHeight: 1.3, align: "justify" };
+  const optimized = engine.typeset(page([block])).pages[0].nodes[0];
+  const simple = engine.typeset(page([{ ...block, linebreaks: "simple" }])).pages[0].nodes[0];
+  assert.equal(optimized.lines.length, 1, "set on one line, spaces shrunk");
+  assert.equal(simple.lines.length, 2, "greedy breaking never shrinks");
+  const line = optimized.lines[0];
+  assert.ok(line.naturalWidth > line.width, "natural width wider than the painted width");
+  assert.ok(Math.abs(line.width - (natural - 0.8)) < 1e-6, "painted exactly at the box width");
+  assert.equal(line.justified, true, "drawn with Typst's justification, which shrinks");
+  assert.equal(engine.typeset(page([block])).report.blocks.a.overflowRight, 0);
+});

@@ -19,7 +19,9 @@
 //               firstBaseline (pt below box top, default ascender * fontSize),
 //               align: "justify" | "left" | "center" | "right",
 //               firstLineIndent (em, default 0), fontWeight: "regular" | "bold",
-//               justifyCap (em of stretch per justifiable gap, default none) }
+//               justifyCap (em of stretch per justifiable gap, default none),
+//               linebreaks: "optimized" (default; Typst's Knuth–Plass, which
+//               may shrink spaces and CJK punctuation to fit a line) | "simple" }
 //   obstacle: { id, box } — content kept from the source page (figures,
 //               formulas, tables, untranslated text) that text must not cover.
 //   runs: Text content runs ({type:"text"}, {type:"math", widthEm, ...}, {type:"break"}).
@@ -81,6 +83,7 @@
       const pitch = lineHeight * fontSize;
       const spacing = (Number(block.paragraphSpacing) || 0) * fontSize;
       const align = block.align || "justify";
+      const linebreaks = block.linebreaks === "simple" ? "simple" : "optimized";
       const cap = Number.isFinite(Number(block.justifyCap)) && Number(block.justifyCap) >= 0 ? Number(block.justifyCap) : null;
 
       const paragraphs = (block.paragraphs || []).map(paragraph => ({ runs: paragraph.runs || [] }));
@@ -91,7 +94,7 @@
       paragraphs.forEach((paragraph, index) => {
         const prepared = using.prepare(paragraph.runs);
         const indentEm = Number((block.paragraphs[index] || {}).firstLineIndent ?? block.firstLineIndent) || 0;
-        const laid = using.layout(prepared, { fontSize, lineHeight: 1, width, align, firstLineIndentEm: indentEm });
+        const laid = using.layout(prepared, { fontSize, lineHeight: 1, width, align, firstLineIndentEm: indentEm, linebreaks });
         if (!first && laid.lines.length) baseline += spacing;
         for (const line of laid.lines) {
           const above = Math.max(ascent, Number(line.ascent) || 0);
@@ -104,7 +107,10 @@
           first = false;
           let painted = line.width;
           let justified = Boolean(line.justified);
-          if (justified) {
+          // A line set wider than its room is drawn shrunk to the room
+          // (Typst shrinks any overfull line, justified or not).
+          if (line.shrunk) { painted = line.available; justified = true; }
+          else if (justified) {
             const available = Number.isFinite(line.available) ? line.available : line.width;
             painted = available;
             if (cap !== null) {
