@@ -1,0 +1,4955 @@
+{
+ "name": "single-column-report-promotion-off",
+ "description": "Same report with singleColumnBodyPromotion disabled (layoutSingleColumnBodyPromotion=false)",
+ "layout": {
+  "pdf_info": [
+   {
+    "page_idx": 0,
+    "page_size": [
+     600,
+     800
+    ],
+    "preproc_blocks": [
+     {
+      "type": "title",
+      "bbox": [
+       80,
+       60,
+       520,
+       110
+      ],
+      "lines": [
+       {
+        "spans": [
+         {
+          "type": "text",
+          "content": "A single column technical report on synthetic compression"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "type": "text",
+      "bbox": [
+       60,
+       160,
+       540,
+       300
+      ],
+      "lines": [
+       {
+        "bbox": [
+         70,
+         160,
+         540,
+         176.5
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "Gauges curve relaxes remain against relaxes the field curve remain curve fixed",
+          "bbox": [
+           60,
+           160,
+           540,
+           176.5
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         177.5,
+         540,
+         194
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "remain the fixed. Initial toward the reference while state at at expands",
+          "bbox": [
+           60,
+           177.5,
+           540,
+           194
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         195,
+         540,
+         211.5
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "previously gauges against and at initial. Through wall wall through equilibrium shock",
+          "bbox": [
+           60,
+           195,
+           540,
+           211.5
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         212.5,
+         540,
+         229
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "results fixed and the gauges using calibrated described the. And at described",
+          "bbox": [
+           60,
+           212.5,
+           540,
+           229
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         230,
+         540,
+         246.5
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "pressure at using fixed the wall shock boundary propagates fixed the the.",
+          "bbox": [
+           60,
+           230,
+           540,
+           246.5
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         247.5,
+         540,
+         264
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "Density described previously the and bubble pressure at remain gauges field remain",
+          "bbox": [
+           60,
+           247.5,
+           540,
+           264
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         265,
+         540,
+         281.5
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "simulations the numerical. Wave conditions of the the fixed and using results",
+          "bbox": [
+           60,
+           265,
+           540,
+           281.5
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         282.5,
+         540,
+         299
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "the reference reference pressure density of.",
+          "bbox": [
+           60,
+           282.5,
+           540,
+           299
+          ]
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "type": "text",
+      "bbox": [
+       60,
+       306,
+       540,
+       400
+      ],
+      "lines": [
+       {
+        "bbox": [
+         70,
+         306,
+         540,
+         323.8
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "Of we toward toward described the previously the relaxes the using the",
+          "bbox": [
+           60,
+           306,
+           540,
+           323.8
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         324.8,
+         540,
+         342.6
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "compression and described. Flow relaxes compression bubble conditions compare using the expands",
+          "bbox": [
+           60,
+           324.8,
+           540,
+           342.6
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         343.6,
+         540,
+         361.40000000000003
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "the shock the wave the relaxes. Compare the state the the while",
+          "bbox": [
+           60,
+           343.6,
+           540,
+           361.40000000000003
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         362.4,
+         540,
+         380.2
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "and follows wall against shock reference toward density remain. Conditions described simulations",
+          "bbox": [
+           60,
+           362.4,
+           540,
+           380.2
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         381.2,
+         540,
+         399
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "at fixed bubble toward the pressure the gauges of state and at.",
+          "bbox": [
+           60,
+           381.2,
+           540,
+           399
+          ]
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "type": "text",
+      "bbox": [
+       60,
+       420,
+       540,
+       600
+      ],
+      "lines": [
+       {
+        "bbox": [
+         60,
+         420,
+         540,
+         436
+        ],
+        "spans": [
+         {
+          "type": "inline_equation",
+          "content": "\\rho",
+          "bbox": [
+           62,
+           420,
+           80,
+           436
+          ]
+         },
+         {
+          "type": "text",
+          "content": "density",
+          "bbox": [
+           120,
+           420,
+           400,
+           436
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         440,
+         540,
+         456
+        ],
+        "spans": [
+         {
+          "type": "inline_equation",
+          "content": "u_s",
+          "bbox": [
+           62,
+           440,
+           80,
+           456
+          ]
+         },
+         {
+          "type": "text",
+          "content": "shock velocity",
+          "bbox": [
+           120,
+           440,
+           400,
+           456
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         460,
+         540,
+         476
+        ],
+        "spans": [
+         {
+          "type": "inline_equation",
+          "content": "u_p",
+          "bbox": [
+           62,
+           460,
+           80,
+           476
+          ]
+         },
+         {
+          "type": "text",
+          "content": "particle velocity",
+          "bbox": [
+           120,
+           460,
+           400,
+           476
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         480,
+         540,
+         496
+        ],
+        "spans": [
+         {
+          "type": "inline_equation",
+          "content": "p_0",
+          "bbox": [
+           62,
+           480,
+           80,
+           496
+          ]
+         },
+         {
+          "type": "text",
+          "content": "initial pressure",
+          "bbox": [
+           120,
+           480,
+           400,
+           496
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         500,
+         540,
+         516
+        ],
+        "spans": [
+         {
+          "type": "inline_equation",
+          "content": "V_0",
+          "bbox": [
+           62,
+           500,
+           80,
+           516
+          ]
+         },
+         {
+          "type": "text",
+          "content": "initial specific volume",
+          "bbox": [
+           120,
+           500,
+           400,
+           516
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         520,
+         540,
+         536
+        ],
+        "spans": [
+         {
+          "type": "inline_equation",
+          "content": "c_0",
+          "bbox": [
+           62,
+           520,
+           80,
+           536
+          ]
+         },
+         {
+          "type": "text",
+          "content": "bulk sound speed",
+          "bbox": [
+           120,
+           520,
+           400,
+           536
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         540,
+         540,
+         556
+        ],
+        "spans": [
+         {
+          "type": "inline_equation",
+          "content": "s",
+          "bbox": [
+           62,
+           540,
+           80,
+           556
+          ]
+         },
+         {
+          "type": "text",
+          "content": "slope of the Hugoniot",
+          "bbox": [
+           120,
+           540,
+           400,
+           556
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         560,
+         540,
+         576
+        ],
+        "spans": [
+         {
+          "type": "inline_equation",
+          "content": "E",
+          "bbox": [
+           62,
+           560,
+           80,
+           576
+          ]
+         },
+         {
+          "type": "text",
+          "content": "internal energy",
+          "bbox": [
+           120,
+           560,
+           400,
+           576
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         580,
+         540,
+         596
+        ],
+        "spans": [
+         {
+          "type": "inline_equation",
+          "content": "T",
+          "bbox": [
+           62,
+           580,
+           80,
+           596
+          ]
+         },
+         {
+          "type": "text",
+          "content": "temperature",
+          "bbox": [
+           120,
+           580,
+           400,
+           596
+          ]
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "type": "text",
+      "bbox": [
+       60,
+       610,
+       540,
+       720
+      ],
+      "lines": [
+       {
+        "bbox": [
+         70,
+         610,
+         540,
+         627.3333333333334
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "Through equilibrium while numerical conditions toward boundary of conditions shock we compare the",
+          "bbox": [
+           60,
+           610,
+           540,
+           627.3333333333334
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         628.3333333333334,
+         540,
+         645.6666666666667
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "we density. At the equilibrium numerical boundary the measure the propagates state the",
+          "bbox": [
+           60,
+           628.3333333333334,
+           540,
+           645.6666666666667
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         646.6666666666666,
+         540,
+         664
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "against compression the conditions. Fixed the remain bubble shock described conditions the fixed",
+          "bbox": [
+           60,
+           646.6666666666666,
+           540,
+           664
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         665,
+         540,
+         682.3333333333334
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "flow the state numerical the initial. Density the flow at we at equilibrium",
+          "bbox": [
+           60,
+           665,
+           540,
+           682.3333333333334
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         683.3333333333334,
+         540,
+         700.6666666666667
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "initial simulations calibrated relaxes propagates reference compression toward. Wall expands shock through boundary",
+          "bbox": [
+           60,
+           683.3333333333334,
+           540,
+           700.6666666666667
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         701.6666666666666,
+         540,
+         719
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "compression the and fixed flow we toward simulations the and.",
+          "bbox": [
+           60,
+           701.6666666666666,
+           540,
+           719
+          ]
+         }
+        ]
+       }
+      ]
+     }
+    ],
+    "discarded_blocks": [
+     {
+      "type": "footer",
+      "bbox": [
+       60,
+       770,
+       540,
+       782
+      ],
+      "lines": [
+       {
+        "spans": [
+         {
+          "type": "text",
+          "content": "Technical report TR-26 page 1"
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "page_idx": 1,
+    "page_size": [
+     600,
+     800
+    ],
+    "preproc_blocks": [
+     {
+      "type": "text",
+      "bbox": [
+       60,
+       60,
+       540,
+       220
+      ],
+      "lines": [
+       {
+        "bbox": [
+         70,
+         60,
+         540,
+         76.77777777777777
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "The and simulations the while at conditions and flow curve through density",
+          "bbox": [
+           60,
+           60,
+           540,
+           76.77777777777777
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         77.77777777777777,
+         540,
+         94.55555555555554
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "previously water of. Shock gauges initial bubble equilibrium shock bubble wall and",
+          "bbox": [
+           60,
+           77.77777777777777,
+           540,
+           94.55555555555554
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         95.55555555555556,
+         540,
+         112.33333333333334
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "pressure reference using follows of toward. Against fixed against the shock using",
+          "bbox": [
+           60,
+           95.55555555555556,
+           540,
+           112.33333333333334
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         113.33333333333334,
+         540,
+         130.11111111111111
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "field the compression of the remain and through the. The compare described",
+          "bbox": [
+           60,
+           113.33333333333334,
+           540,
+           130.11111111111111
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         131.11111111111111,
+         540,
+         147.88888888888889
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "the described curve and toward gauges calibrated the water and remain while.",
+          "bbox": [
+           60,
+           131.11111111111111,
+           540,
+           147.88888888888889
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         148.88888888888889,
+         540,
+         165.66666666666666
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "Described the conditions conditions relaxes relaxes initial of propagates through compare flow",
+          "bbox": [
+           60,
+           148.88888888888889,
+           540,
+           165.66666666666666
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         166.66666666666669,
+         540,
+         183.44444444444446
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "toward and boundary. Boundary bubble curve conditions results numerical against toward using",
+          "bbox": [
+           60,
+           166.66666666666669,
+           540,
+           183.44444444444446
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         184.44444444444446,
+         540,
+         201.22222222222223
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "and calibrated bubble state the previously. Flow the and we compare the",
+          "bbox": [
+           60,
+           184.44444444444446,
+           540,
+           201.22222222222223
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         202.22222222222223,
+         540,
+         219
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "and the shock conditions flow the remain follows flow.",
+          "bbox": [
+           60,
+           202.22222222222223,
+           540,
+           219
+          ]
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "type": "text",
+      "bbox": [
+       60,
+       226,
+       250,
+       240
+      ],
+      "lines": [
+       {
+        "spans": [
+         {
+          "type": "text",
+          "content": "Substituting the relation gives"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "type": "interline_equation",
+      "bbox": [
+       200,
+       246,
+       400,
+       276
+      ],
+      "lines": [
+       {
+        "spans": [
+         {
+          "type": "interline_equation",
+          "content": "p = \\rho_0 u_s u_p \\tag{3}"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "type": "text",
+      "bbox": [
+       60,
+       282,
+       300,
+       296
+      ],
+      "lines": [
+       {
+        "spans": [
+         {
+          "type": "text",
+          "content": "and similarly for energy,"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "type": "interline_equation",
+      "bbox": [
+       200,
+       302,
+       400,
+       332
+      ],
+      "lines": [
+       {
+        "spans": [
+         {
+          "type": "interline_equation",
+          "content": "E - E_0 = \\tfrac12 p (V_0 - V) \\tag{4}"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "type": "text",
+      "bbox": [
+       60,
+       340,
+       540,
+       520
+      ],
+      "lines": [
+       {
+        "bbox": [
+         70,
+         340,
+         540,
+         357
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "The of and compression propagates the reference and relaxes pressure equilibrium conditions",
+          "bbox": [
+           60,
+           340,
+           540,
+           357
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         358,
+         540,
+         375
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "conditions the bubble. The and field flow reference simulations we initial propagates",
+          "bbox": [
+           60,
+           358,
+           540,
+           375
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         376,
+         540,
+         393
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "pressure against propagates compression and the. Calibrated boundary described wall previously conditions",
+          "bbox": [
+           60,
+           376,
+           540,
+           393
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         394,
+         540,
+         411
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "results the shock numerical shock and gauges density remain. Measure water toward",
+          "bbox": [
+           60,
+           394,
+           540,
+           411
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         412,
+         540,
+         429
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "conditions fixed fixed boundary compare against water described described gauges the compression.",
+          "bbox": [
+           60,
+           412,
+           540,
+           429
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         430,
+         540,
+         447
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "While shock water water the the the previously using and the using",
+          "bbox": [
+           60,
+           430,
+           540,
+           447
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         448,
+         540,
+         465
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "remain results against. Fixed described expands field the numerical initial we simulations",
+          "bbox": [
+           60,
+           448,
+           540,
+           465
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         466,
+         540,
+         483
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "equilibrium flow bubble the initial wall. And follows through expands of results",
+          "bbox": [
+           60,
+           466,
+           540,
+           483
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         484,
+         540,
+         501
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "boundary calibrated using and bubble expands the fixed shock. The the the",
+          "bbox": [
+           60,
+           484,
+           540,
+           501
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         502,
+         540,
+         519
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "gauges the conditions flow using and initial density results curve using remain.",
+          "bbox": [
+           60,
+           502,
+           540,
+           519
+          ]
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "type": "text",
+      "bbox": [
+       60,
+       526,
+       540,
+       720
+      ],
+      "lines": [
+       {
+        "bbox": [
+         70,
+         526,
+         540,
+         544.4
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "We calibrated the initial field shock curve and measure through water density",
+          "bbox": [
+           60,
+           526,
+           540,
+           544.4
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         545.4,
+         540,
+         563.8
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "the compression and. The the state water fixed the previously while relaxes",
+          "bbox": [
+           60,
+           545.4,
+           540,
+           563.8
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         564.8,
+         540,
+         583.1999999999999
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "water the the calibrated shock through. The the results the bubble water",
+          "bbox": [
+           60,
+           564.8,
+           540,
+           583.1999999999999
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         584.2,
+         540,
+         602.6
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "compression relaxes water and fixed curve relaxes at flow. Using curve fixed",
+          "bbox": [
+           60,
+           584.2,
+           540,
+           602.6
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         603.6,
+         540,
+         622
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "and pressure shock numerical and calibrated the at gauges the the relaxes.",
+          "bbox": [
+           60,
+           603.6,
+           540,
+           622
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         623,
+         540,
+         641.4
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "Remain fixed initial expands density and through results relaxes water field the",
+          "bbox": [
+           60,
+           623,
+           540,
+           641.4
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         642.4,
+         540,
+         660.8
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "measure remain the. Compare calibrated the simulations curve the compare toward using",
+          "bbox": [
+           60,
+           642.4,
+           540,
+           660.8
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         661.8,
+         540,
+         680.1999999999999
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "wall initial calibrated and the previously. Expands previously initial relaxes gauges the",
+          "bbox": [
+           60,
+           661.8,
+           540,
+           680.1999999999999
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         681.2,
+         540,
+         699.6
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "the equilibrium curve numerical measure and against state follows. The compare pressure",
+          "bbox": [
+           60,
+           681.2,
+           540,
+           699.6
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         700.6,
+         540,
+         719
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "we pressure against boundary toward and the compare and and initial follows.",
+          "bbox": [
+           60,
+           700.6,
+           540,
+           719
+          ]
+         }
+        ]
+       }
+      ]
+     }
+    ],
+    "discarded_blocks": [
+     {
+      "type": "footer",
+      "bbox": [
+       60,
+       770,
+       540,
+       782
+      ],
+      "lines": [
+       {
+        "spans": [
+         {
+          "type": "text",
+          "content": "Technical report TR-26 page 2"
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "page_idx": 2,
+    "page_size": [
+     600,
+     800
+    ],
+    "preproc_blocks": [
+     {
+      "type": "chart",
+      "bbox": [
+       80,
+       80,
+       520,
+       500
+      ],
+      "blocks": [
+       {
+        "type": "chart_body",
+        "bbox": [
+         80,
+         80,
+         520,
+         470
+        ],
+        "lines": [
+         {
+          "spans": [
+           {
+            "type": "image",
+            "image_path": "images/chart.png"
+           }
+          ]
+         }
+        ]
+       },
+       {
+        "type": "chart_caption",
+        "bbox": [
+         80,
+         474,
+         520,
+         500
+        ],
+        "lines": [
+         {
+          "bbox": [
+           90,
+           474,
+           520,
+           486
+          ],
+          "spans": [
+           {
+            "type": "text",
+            "content": "Fig. 2. Hugoniot of water compared",
+            "bbox": [
+             80,
+             474,
+             520,
+             486
+            ]
+           }
+          ]
+         },
+         {
+          "bbox": [
+           80,
+           487,
+           520,
+           499
+          ],
+          "spans": [
+           {
+            "type": "text",
+            "content": "with the fitted linear relation.",
+            "bbox": [
+             80,
+             487,
+             520,
+             499
+            ]
+           }
+          ]
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "type": "interline_equation",
+      "bbox": [
+       150,
+       520,
+       450,
+       550
+      ],
+      "image_path": "images/eq-crop.png",
+      "lines": []
+     }
+    ],
+    "discarded_blocks": []
+   },
+   {
+    "page_idx": 3,
+    "page_size": [
+     600,
+     800
+    ],
+    "preproc_blocks": [
+     {
+      "type": "text",
+      "bbox": [
+       60,
+       60,
+       540,
+       260
+      ],
+      "lines": [
+       {
+        "bbox": [
+         70,
+         60,
+         540,
+         77.18181818181819
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "The relaxes the at flow bubble the field using compression initial described the",
+          "bbox": [
+           60,
+           60,
+           540,
+           77.18181818181819
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         78.18181818181819,
+         540,
+         95.36363636363637
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "previously equilibrium. Results the the the toward bubble fixed water initial initial remain",
+          "bbox": [
+           60,
+           78.18181818181819,
+           540,
+           95.36363636363637
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         96.36363636363637,
+         540,
+         113.54545454545456
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "field shock and the. Gauges density and results gauges the previously compare shock",
+          "bbox": [
+           60,
+           96.36363636363637,
+           540,
+           113.54545454545456
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         114.54545454545455,
+         540,
+         131.72727272727272
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "compression measure initial field shock water. Measure remain conditions the compression the expands",
+          "bbox": [
+           60,
+           114.54545454545455,
+           540,
+           131.72727272727272
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         132.72727272727275,
+         540,
+         149.90909090909093
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "against the results field boundary density water the. Remain gauges compare while the",
+          "bbox": [
+           60,
+           132.72727272727275,
+           540,
+           149.90909090909093
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         150.90909090909093,
+         540,
+         168.09090909090912
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "water we conditions we initial follows at state conditions initial. While shock fixed",
+          "bbox": [
+           60,
+           150.90909090909093,
+           540,
+           168.09090909090912
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         169.0909090909091,
+         540,
+         186.27272727272728
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "state calibrated field initial while the the compression pressure numerical gauges toward. The",
+          "bbox": [
+           60,
+           169.0909090909091,
+           540,
+           186.27272727272728
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         187.27272727272728,
+         540,
+         204.45454545454547
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "at at numerical field we while reference we and flow measure reference fixed",
+          "bbox": [
+           60,
+           187.27272727272728,
+           540,
+           204.45454545454547
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         205.45454545454547,
+         540,
+         222.63636363636365
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "described. The calibrated remain compare fixed at numerical calibrated state the curve conditions",
+          "bbox": [
+           60,
+           205.45454545454547,
+           540,
+           222.63636363636365
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         223.63636363636365,
+         540,
+         240.81818181818184
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "and measure remain. Fixed boundary bubble simulations compare the gauges through results using",
+          "bbox": [
+           60,
+           223.63636363636365,
+           540,
+           240.81818181818184
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         241.81818181818184,
+         540,
+         259
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "and the compare flow the.",
+          "bbox": [
+           60,
+           241.81818181818184,
+           540,
+           259
+          ]
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "type": "text",
+      "bbox": [
+       60,
+       266,
+       230,
+       280
+      ],
+      "lines": [
+       {
+        "spans": [
+         {
+          "type": "text",
+          "content": "The final step follows."
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "type": "text",
+      "bbox": [
+       60,
+       286,
+       540,
+       420
+      ],
+      "lines": [
+       {
+        "bbox": [
+         70,
+         286,
+         540,
+         304.14285714285717
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "The using the and initial water the wave results relaxes propagates and calibrated",
+          "bbox": [
+           60,
+           286,
+           540,
+           304.14285714285717
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         305.14285714285717,
+         540,
+         323.28571428571433
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "through at. Compression conditions bubble simulations at through remain the conditions and the",
+          "bbox": [
+           60,
+           305.14285714285717,
+           540,
+           323.28571428571433
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         324.2857142857143,
+         540,
+         342.42857142857144
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "simulations using of bubble. Numerical measure conditions the water the the using fixed",
+          "bbox": [
+           60,
+           324.2857142857143,
+           540,
+           342.42857142857144
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         343.42857142857144,
+         540,
+         361.5714285714286
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "wall initial toward the expands propagates. And the at flow the the the",
+          "bbox": [
+           60,
+           343.42857142857144,
+           540,
+           361.5714285714286
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         362.57142857142856,
+         540,
+         380.7142857142857
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "and and fixed curve against of fixed the. Curve wave relaxes conditions wall",
+          "bbox": [
+           60,
+           362.57142857142856,
+           540,
+           380.7142857142857
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         381.7142857142857,
+         540,
+         399.8571428571429
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "the follows expands using through fixed and the pressure flow. Reference density shock",
+          "bbox": [
+           60,
+           381.7142857142857,
+           540,
+           399.8571428571429
+          ]
+         }
+        ]
+       },
+       {
+        "bbox": [
+         60,
+         400.8571428571429,
+         540,
+         419.00000000000006
+        ],
+        "spans": [
+         {
+          "type": "text",
+          "content": "against and simulations simulations bubble water remain simulations the the propagates and.",
+          "bbox": [
+           60,
+           400.8571428571429,
+           540,
+           419.00000000000006
+          ]
+         }
+        ]
+       }
+      ]
+     }
+    ],
+    "discarded_blocks": []
+   }
+  ]
+ },
+ "modelPages": [
+  [
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.11666666666666667,
+     0.2,
+     0.9,
+     0.220625
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.221875,
+     0.9,
+     0.2425
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.24375,
+     0.9,
+     0.264375
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.265625,
+     0.9,
+     0.28625
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.2875,
+     0.9,
+     0.308125
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.309375,
+     0.9,
+     0.33
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.33125,
+     0.9,
+     0.351875
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.353125,
+     0.9,
+     0.37375
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.11666666666666667,
+     0.3825,
+     0.9,
+     0.40475
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.406,
+     0.9,
+     0.42825
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.42950000000000005,
+     0.9,
+     0.45175000000000004
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.45299999999999996,
+     0.9,
+     0.47525
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.4765,
+     0.9,
+     0.49875
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.525,
+     0.9,
+     0.545
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.55,
+     0.9,
+     0.57
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.575,
+     0.9,
+     0.595
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.6,
+     0.9,
+     0.62
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.625,
+     0.9,
+     0.645
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.65,
+     0.9,
+     0.67
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.675,
+     0.9,
+     0.695
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.7,
+     0.9,
+     0.72
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.725,
+     0.9,
+     0.745
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.11666666666666667,
+     0.7625,
+     0.9,
+     0.7841666666666667
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.7854166666666668,
+     0.9,
+     0.8070833333333334
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.8083333333333332,
+     0.9,
+     0.83
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.83125,
+     0.9,
+     0.8529166666666668
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.8541666666666667,
+     0.9,
+     0.8758333333333335
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.8770833333333333,
+     0.9,
+     0.89875
+    ]
+   }
+  ],
+  [
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.11666666666666667,
+     0.075,
+     0.9,
+     0.09597222222222221
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.09722222222222221,
+     0.9,
+     0.11819444444444444
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.11944444444444445,
+     0.9,
+     0.1404166666666667
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.1416666666666667,
+     0.9,
+     0.1626388888888889
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.1638888888888889,
+     0.9,
+     0.18486111111111111
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.18611111111111112,
+     0.9,
+     0.2070833333333333
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.20833333333333337,
+     0.9,
+     0.22930555555555557
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.23055555555555557,
+     0.9,
+     0.2515277777777778
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.25277777777777777,
+     0.9,
+     0.27375
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.11666666666666667,
+     0.425,
+     0.9,
+     0.44625
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.4475,
+     0.9,
+     0.46875
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.47,
+     0.9,
+     0.49125
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.4925,
+     0.9,
+     0.51375
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.515,
+     0.9,
+     0.53625
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.5375,
+     0.9,
+     0.55875
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.56,
+     0.9,
+     0.58125
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.5825,
+     0.9,
+     0.60375
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.605,
+     0.9,
+     0.62625
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.6275,
+     0.9,
+     0.64875
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.11666666666666667,
+     0.6575,
+     0.9,
+     0.6805
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.68175,
+     0.9,
+     0.70475
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.706,
+     0.9,
+     0.7289999999999999
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.7302500000000001,
+     0.9,
+     0.75325
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.7545000000000001,
+     0.9,
+     0.7775
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.77875,
+     0.9,
+     0.80175
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.8029999999999999,
+     0.9,
+     0.826
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.8272499999999999,
+     0.9,
+     0.85025
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.8515,
+     0.9,
+     0.8745
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.87575,
+     0.9,
+     0.89875
+    ]
+   }
+  ],
+  [],
+  [
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.11666666666666667,
+     0.075,
+     0.9,
+     0.09647727272727273
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.09772727272727273,
+     0.9,
+     0.11920454545454547
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.12045454545454547,
+     0.9,
+     0.14193181818181821
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.1431818181818182,
+     0.9,
+     0.1646590909090909
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.16590909090909092,
+     0.9,
+     0.18738636363636366
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.18863636363636366,
+     0.9,
+     0.2101136363636364
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.21136363636363636,
+     0.9,
+     0.2328409090909091
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.2340909090909091,
+     0.9,
+     0.25556818181818186
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.25681818181818183,
+     0.9,
+     0.27829545454545457
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.27954545454545454,
+     0.9,
+     0.3010227272727273
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.3022727272727273,
+     0.9,
+     0.32375
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.11666666666666667,
+     0.3575,
+     0.9,
+     0.3801785714285715
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.38142857142857145,
+     0.9,
+     0.40410714285714294
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.40535714285714286,
+     0.9,
+     0.4280357142857143
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.4292857142857143,
+     0.9,
+     0.45196428571428576
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.4532142857142857,
+     0.9,
+     0.4758928571428572
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.47714285714285715,
+     0.9,
+     0.49982142857142864
+    ]
+   },
+   {
+    "type": "ocr_text",
+    "bbox": [
+     0.1,
+     0.5010714285714286,
+     0.9,
+     0.52375
+    ]
+   }
+  ]
+ ],
+ "assetMap": {
+  "images/chart.png": "assets/chart.png",
+  "eq-crop.png": "assets/eq-crop.png"
+ },
+ "translations": {
+  "p001_b0001": "本研究采用合成数据分析冲击波在水中的传播并比较测量结。",
+  "p001_b0002": "研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分。",
+  "p001_b0003": "究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值。",
+  "p001_b0005": "用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较。",
+  "p002_b0001": "合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果。",
+  "p002_b0002": "成数据分析冲击波在水中的传播。",
+  "p002_b0003": "数据分析冲击波在水中的。",
+  "p002_b0004": "据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测。",
+  "p002_b0005": "分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差。",
+  "p004_b0001": "冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的。",
+  "p004_b0002": "击波在水中的传播并比。",
+  "p004_b0003": "波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并。"
+ },
+ "formulaReplacements": {},
+ "singleColumnBodyPromotion": false,
+ "expected": {
+  "documentID": "single-column-report-promotion-off",
+  "sourceFingerprint": "d6983f6c17ad8075",
+  "styles": {
+   "bodyText": {
+    "fontSize": 8.4,
+    "lineHeight": 1.22
+   },
+   "referenceText": {
+    "fontSize": 7.8,
+    "lineHeight": 1.12
+   }
+  },
+  "pages": [
+   {
+    "index": 1,
+    "width": 600,
+    "height": 800,
+    "blocks": [
+     {
+      "id": "p001_b0001",
+      "page": 1,
+      "type": "title",
+      "kind": "text",
+      "bbox": [
+       80,
+       60,
+       520,
+       110
+      ],
+      "text": "A single column technical report on synthetic compression",
+      "translatedText": "本研究采用合成数据分析冲击波在水中的传播并比较测量结。",
+      "formulas": [],
+      "formulaItems": [],
+      "imagePath": "",
+      "imageURL": "",
+      "lineCount": 1,
+      "fontSize": 23.278762853725713,
+      "translatable": true
+     },
+     {
+      "id": "p001_b0002",
+      "page": 1,
+      "type": "text",
+      "kind": "text",
+      "bbox": [
+       60,
+       160,
+       540,
+       300
+      ],
+      "text": "Gauges curve relaxes remain against relaxes the field curve remain curve fixed\nremain the fixed. Initial toward the reference while state at at expands\npreviously gauges against and at initial. Through wall wall through equilibrium shock\nresults fixed and the gauges using calibrated described the. And at described\npressure at using fixed the wall shock boundary propagates fixed the the.\nDensity described previously the and bubble pressure at remain gauges field remain\nsimulations the numerical. Wave conditions of the the fixed and using results\nthe reference reference pressure density of.",
+      "translatedText": "研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分。",
+      "formulas": [],
+      "formulaItems": [],
+      "imagePath": "",
+      "imageURL": "",
+      "lineCount": 8,
+      "fontSize": 11.879393923933998,
+      "translatable": true
+     },
+     {
+      "id": "p001_b0003",
+      "page": 1,
+      "type": "text",
+      "kind": "text",
+      "bbox": [
+       60,
+       306,
+       540,
+       400
+      ],
+      "text": "Of we toward toward described the previously the relaxes the using the\ncompression and described. Flow relaxes compression bubble conditions compare using the expands\nthe shock the wave the relaxes. Compare the state the the while\nand follows wall against shock reference toward density remain. Conditions described simulations\nat fixed bubble toward the pressure the gauges of state and at.",
+      "translatedText": "究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值。",
+      "formulas": [],
+      "formulaItems": [],
+      "imagePath": "",
+      "imageURL": "",
+      "lineCount": 5,
+      "fontSize": 12.356620897316548,
+      "translatable": true
+     },
+     {
+      "id": "p001_b0004",
+      "page": 1,
+      "type": "text",
+      "kind": "text",
+      "bbox": [
+       60,
+       420,
+       540,
+       600
+      ],
+      "text": "\\(\\rho\\)density\n\n\\(u_s\\)shock velocity\n\n\\(u_p\\)particle velocity\n\n\\(p_0\\)initial pressure\n\n\\(V_0\\)initial specific volume\n\n\\(c_0\\)bulk sound speed\n\n\\(s\\)slope of the Hugoniot\n\n\\(E\\)internal energy\n\n\\(T\\)temperature",
+      "translatedText": "",
+      "formulas": [
+       "\\rho",
+       "u_s",
+       "u_p",
+       "p_0",
+       "V_0",
+       "c_0",
+       "s",
+       "E",
+       "T"
+      ],
+      "formulaItems": [
+       {
+        "id": "p001_f0001",
+        "page": 1,
+        "type": "text",
+        "tex": "\\rho"
+       },
+       {
+        "id": "p001_f0002",
+        "page": 1,
+        "type": "text",
+        "tex": "u_s"
+       },
+       {
+        "id": "p001_f0003",
+        "page": 1,
+        "type": "text",
+        "tex": "u_p"
+       },
+       {
+        "id": "p001_f0004",
+        "page": 1,
+        "type": "text",
+        "tex": "p_0"
+       },
+       {
+        "id": "p001_f0005",
+        "page": 1,
+        "type": "text",
+        "tex": "V_0"
+       },
+       {
+        "id": "p001_f0006",
+        "page": 1,
+        "type": "text",
+        "tex": "c_0"
+       },
+       {
+        "id": "p001_f0007",
+        "page": 1,
+        "type": "text",
+        "tex": "s"
+       },
+       {
+        "id": "p001_f0008",
+        "page": 1,
+        "type": "text",
+        "tex": "E"
+       },
+       {
+        "id": "p001_f0009",
+        "page": 1,
+        "type": "text",
+        "tex": "T"
+       }
+      ],
+      "imagePath": "",
+      "imageURL": "",
+      "lineCount": 9,
+      "fontSize": 14.399999999999999,
+      "translatable": true
+     },
+     {
+      "id": "p001_b0005",
+      "page": 1,
+      "type": "text",
+      "kind": "text",
+      "bbox": [
+       60,
+       610,
+       540,
+       720
+      ],
+      "text": "Through equilibrium while numerical conditions toward boundary of conditions shock we compare the\nwe density. At the equilibrium numerical boundary the measure the propagates state the\nagainst compression the conditions. Fixed the remain bubble shock described conditions the fixed\nflow the state numerical the initial. Density the flow at we at equilibrium\ninitial simulations calibrated relaxes propagates reference compression toward. Wall expands shock through boundary\ncompression the and fixed flow we toward simulations the and.",
+      "translatedText": "用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较。",
+      "formulas": [],
+      "formulaItems": [],
+      "imagePath": "",
+      "imageURL": "",
+      "lineCount": 6,
+      "fontSize": 11.431535329954588,
+      "translatable": true
+     }
+    ],
+    "restoration": {
+     "streams": [
+      {
+       "side": "full",
+       "columnKey": "column-0",
+       "items": [
+        {
+         "id": "p001_b0002",
+         "kind": "text",
+         "type": "text",
+         "bbox": [
+          60,
+          160,
+          540,
+          300
+         ],
+         "html": "Gauges curve relaxes remain against relaxes the field curve remain curve fixed remain the fixed. Initial toward the reference while state at at expands previously gauges against and at initial. Through wall wall through equilibrium shock results fixed and the gauges using calibrated described the. And at described pressure at using fixed the wall shock boundary propagates fixed the the. Density described previously the and bubble pressure at remain gauges field remain simulations the numerical. Wave conditions of the the fixed and using results the reference reference pressure density of.",
+         "text": "Gauges curve relaxes remain against relaxes the field curve remain curve fixed\nremain the fixed. Initial toward the reference while state at at expands\npreviously gauges against and at initial. Through wall wall through equilibrium shock\nresults fixed and the gauges using calibrated described the. And at described\npressure at using fixed the wall shock boundary propagates fixed the the.\nDensity described previously the and bubble pressure at remain gauges field remain\nsimulations the numerical. Wave conditions of the the fixed and using results\nthe reference reference pressure density of.",
+         "translatedText": "研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分。",
+         "roleText": "Gauges curve relaxes remain against relaxes the field curve remain curve fixed\nremain the fixed. Initial toward the reference while state at at expands\npreviously gauges against and at initial. Through wall wall through equilibrium shock\nresults fixed and the gauges using calibrated described the. And at described\npressure at using fixed the wall shock boundary propagates fixed the the.\nDensity described previously the and bubble pressure at remain gauges field remain\nsimulations the numerical. Wave conditions of the the fixed and using results\nthe reference reference pressure density of.",
+         "originalLineCount": 8,
+         "debugLines": [
+          [
+           70,
+           160,
+           540,
+           176.5
+          ],
+          [
+           60,
+           177.5,
+           540,
+           194
+          ],
+          [
+           60,
+           195,
+           540,
+           211.5
+          ],
+          [
+           60,
+           212.5,
+           540,
+           229
+          ],
+          [
+           60,
+           230,
+           540,
+           246.5
+          ],
+          [
+           60,
+           247.5,
+           540,
+           264
+          ],
+          [
+           60,
+           265,
+           540,
+           281.5
+          ],
+          [
+           60,
+           282.5,
+           540,
+           299
+          ]
+         ],
+         "fontEstimate": 11,
+         "side": "full",
+         "indent": 10,
+         "pageIndex": 0,
+         "debugRole": "text",
+         "tocRows": null,
+         "symbolGlossary": false,
+         "paragraphs": [],
+         "fromList": false,
+         "columnKey": "column-0"
+        }
+       ],
+       "bbox": [
+        60,
+        160,
+        540,
+        300
+       ],
+       "pageIndex": 0,
+       "debugRole": "text",
+       "fontSize": 7.6,
+       "lineHeight": 1.28,
+       "paragraphGap": 0.16,
+       "styleKind": "text",
+       "bodyInherited": false,
+       "refsOnly": false,
+       "equationDense": false
+      },
+      {
+       "side": "full",
+       "columnKey": "column-0",
+       "items": [
+        {
+         "id": "p001_b0003",
+         "kind": "text",
+         "type": "text",
+         "bbox": [
+          60,
+          306,
+          540,
+          400
+         ],
+         "html": "Of we toward toward described the previously the relaxes the using the compression and described. Flow relaxes compression bubble conditions compare using the expands the shock the wave the relaxes. Compare the state the the while and follows wall against shock reference toward density remain. Conditions described simulations at fixed bubble toward the pressure the gauges of state and at.",
+         "text": "Of we toward toward described the previously the relaxes the using the\ncompression and described. Flow relaxes compression bubble conditions compare using the expands\nthe shock the wave the relaxes. Compare the state the the while\nand follows wall against shock reference toward density remain. Conditions described simulations\nat fixed bubble toward the pressure the gauges of state and at.",
+         "translatedText": "究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值。",
+         "roleText": "Of we toward toward described the previously the relaxes the using the\ncompression and described. Flow relaxes compression bubble conditions compare using the expands\nthe shock the wave the relaxes. Compare the state the the while\nand follows wall against shock reference toward density remain. Conditions described simulations\nat fixed bubble toward the pressure the gauges of state and at.",
+         "originalLineCount": 5,
+         "debugLines": [
+          [
+           70,
+           306,
+           540,
+           323.8
+          ],
+          [
+           60,
+           324.8,
+           540,
+           342.6
+          ],
+          [
+           60,
+           343.6,
+           540,
+           361.40000000000003
+          ],
+          [
+           60,
+           362.4,
+           540,
+           380.2
+          ],
+          [
+           60,
+           381.2,
+           540,
+           399
+          ]
+         ],
+         "fontEstimate": 11,
+         "side": "full",
+         "indent": 10,
+         "pageIndex": 0,
+         "debugRole": "text",
+         "tocRows": null,
+         "symbolGlossary": false,
+         "paragraphs": [],
+         "fromList": false,
+         "columnKey": "column-0"
+        }
+       ],
+       "bbox": [
+        60,
+        306,
+        540,
+        400
+       ],
+       "pageIndex": 0,
+       "debugRole": "text",
+       "fontSize": 7.6,
+       "lineHeight": 1.28,
+       "paragraphGap": 0.16,
+       "styleKind": "text",
+       "bodyInherited": false,
+       "refsOnly": false,
+       "equationDense": false
+      },
+      {
+       "side": "full",
+       "columnKey": "column-0",
+       "items": [
+        {
+         "id": "p001_b0004",
+         "kind": "text",
+         "type": "text",
+         "bbox": [
+          60,
+          420,
+          540,
+          600
+         ],
+         "html": "<tex data-display=\"0\">\\rho</tex>density<br /><tex data-display=\"0\">u_s</tex>shock velocity<br /><tex data-display=\"0\">u_p</tex>particle velocity<br /><tex data-display=\"0\">p_0</tex>initial pressure<br /><tex data-display=\"0\">V_0</tex>initial specific volume<br /><tex data-display=\"0\">c_0</tex>bulk sound speed<br /><tex data-display=\"0\">s</tex>slope of the Hugoniot<br /><tex data-display=\"0\">E</tex>internal energy<br /><tex data-display=\"0\">T</tex>temperature",
+         "text": "\\(\\rho\\)density\n\n\\(u_s\\)shock velocity\n\n\\(u_p\\)particle velocity\n\n\\(p_0\\)initial pressure\n\n\\(V_0\\)initial specific volume\n\n\\(c_0\\)bulk sound speed\n\n\\(s\\)slope of the Hugoniot\n\n\\(E\\)internal energy\n\n\\(T\\)temperature",
+         "translatedText": "",
+         "roleText": "\\(\\rho\\)density\n\n\\(u_s\\)shock velocity\n\n\\(u_p\\)particle velocity\n\n\\(p_0\\)initial pressure\n\n\\(V_0\\)initial specific volume\n\n\\(c_0\\)bulk sound speed\n\n\\(s\\)slope of the Hugoniot\n\n\\(E\\)internal energy\n\n\\(T\\)temperature",
+         "originalLineCount": 9,
+         "debugLines": [
+          [
+           60,
+           420,
+           540,
+           436
+          ],
+          [
+           60,
+           440,
+           540,
+           456
+          ],
+          [
+           60,
+           460,
+           540,
+           476
+          ],
+          [
+           60,
+           480,
+           540,
+           496
+          ],
+          [
+           60,
+           500,
+           540,
+           516
+          ],
+          [
+           60,
+           520,
+           540,
+           536
+          ],
+          [
+           60,
+           540,
+           540,
+           556
+          ],
+          [
+           60,
+           560,
+           540,
+           576
+          ],
+          [
+           60,
+           580,
+           540,
+           596
+          ]
+         ],
+         "fontEstimate": 11,
+         "side": "full",
+         "indent": 0,
+         "pageIndex": 0,
+         "debugRole": "text",
+         "tocRows": null,
+         "symbolGlossary": true,
+         "paragraphs": [],
+         "fromList": false,
+         "columnKey": "column-0"
+        }
+       ],
+       "bbox": [
+        60,
+        420,
+        540,
+        600
+       ],
+       "pageIndex": 0,
+       "debugRole": "text",
+       "fontSize": 7.6,
+       "lineHeight": 1.28,
+       "paragraphGap": 0.16,
+       "styleKind": "text",
+       "bodyInherited": false,
+       "refsOnly": false,
+       "equationDense": false
+      },
+      {
+       "side": "full",
+       "columnKey": "column-0",
+       "items": [
+        {
+         "id": "p001_b0005",
+         "kind": "text",
+         "type": "text",
+         "bbox": [
+          60,
+          610,
+          540,
+          720
+         ],
+         "html": "Through equilibrium while numerical conditions toward boundary of conditions shock we compare the we density. At the equilibrium numerical boundary the measure the propagates state the against compression the conditions. Fixed the remain bubble shock described conditions the fixed flow the state numerical the initial. Density the flow at we at equilibrium initial simulations calibrated relaxes propagates reference compression toward. Wall expands shock through boundary compression the and fixed flow we toward simulations the and.",
+         "text": "Through equilibrium while numerical conditions toward boundary of conditions shock we compare the\nwe density. At the equilibrium numerical boundary the measure the propagates state the\nagainst compression the conditions. Fixed the remain bubble shock described conditions the fixed\nflow the state numerical the initial. Density the flow at we at equilibrium\ninitial simulations calibrated relaxes propagates reference compression toward. Wall expands shock through boundary\ncompression the and fixed flow we toward simulations the and.",
+         "translatedText": "用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较。",
+         "roleText": "Through equilibrium while numerical conditions toward boundary of conditions shock we compare the\nwe density. At the equilibrium numerical boundary the measure the propagates state the\nagainst compression the conditions. Fixed the remain bubble shock described conditions the fixed\nflow the state numerical the initial. Density the flow at we at equilibrium\ninitial simulations calibrated relaxes propagates reference compression toward. Wall expands shock through boundary\ncompression the and fixed flow we toward simulations the and.",
+         "originalLineCount": 6,
+         "debugLines": [
+          [
+           70,
+           610,
+           540,
+           627.3333333333334
+          ],
+          [
+           60,
+           628.3333333333334,
+           540,
+           645.6666666666667
+          ],
+          [
+           60,
+           646.6666666666666,
+           540,
+           664
+          ],
+          [
+           60,
+           665,
+           540,
+           682.3333333333334
+          ],
+          [
+           60,
+           683.3333333333334,
+           540,
+           700.6666666666667
+          ],
+          [
+           60,
+           701.6666666666666,
+           540,
+           719
+          ]
+         ],
+         "fontEstimate": 11,
+         "side": "full",
+         "indent": 10,
+         "pageIndex": 0,
+         "debugRole": "text",
+         "tocRows": null,
+         "symbolGlossary": false,
+         "paragraphs": [],
+         "fromList": false,
+         "columnKey": "column-0"
+        }
+       ],
+       "bbox": [
+        60,
+        610,
+        540,
+        720
+       ],
+       "pageIndex": 0,
+       "debugRole": "text",
+       "fontSize": 7.6,
+       "lineHeight": 1.28,
+       "paragraphGap": 0.16,
+       "styleKind": "text",
+       "bodyInherited": false,
+       "refsOnly": false,
+       "equationDense": false
+      }
+     ],
+     "absoluteBlocks": [
+      {
+       "id": "p001_b0001",
+       "type": "title",
+       "kind": "text",
+       "bbox": [
+        80,
+        60,
+        520,
+        110
+       ],
+       "text": "A single column technical report on synthetic compression",
+       "translatedText": "本研究采用合成数据分析冲击波在水中的传播并比较测量结。",
+       "sourceHTML": "A single column technical report on synthetic compression",
+       "tableHTML": "",
+       "imagePath": "",
+       "imageURL": "",
+       "formulaItems": [],
+       "formulas": [],
+       "codeLanguage": "",
+       "lineCount": 1,
+       "fontSize": 13,
+       "lineHeight": 1.12,
+       "debugLines": [],
+       "mainTitle": true
+      },
+      {
+       "id": "",
+       "type": "page_footer",
+       "kind": "text",
+       "bbox": [
+        60,
+        770,
+        540,
+        782
+       ],
+       "text": "Technical report TR-26 page 1",
+       "translatedText": "",
+       "sourceHTML": "Technical report TR-26 page 1",
+       "tableHTML": "",
+       "imagePath": "",
+       "imageURL": "",
+       "formulaItems": [],
+       "formulas": [],
+       "codeLanguage": "",
+       "lineCount": 1,
+       "fontSize": 10,
+       "lineHeight": 1.12,
+       "debugLines": [],
+       "sourceOnly": true
+      }
+     ],
+     "ocrBoxes": [
+      [
+       70,
+       160,
+       540,
+       176.5
+      ],
+      [
+       60,
+       177.5,
+       540,
+       194
+      ],
+      [
+       60,
+       195,
+       540,
+       211.50000000000003
+      ],
+      [
+       60,
+       212.5,
+       540,
+       229
+      ],
+      [
+       60,
+       229.99999999999997,
+       540,
+       246.5
+      ],
+      [
+       60,
+       247.5,
+       540,
+       264
+      ],
+      [
+       60,
+       265,
+       540,
+       281.5
+      ],
+      [
+       60,
+       282.5,
+       540,
+       299
+      ],
+      [
+       70,
+       306,
+       540,
+       323.8
+      ],
+      [
+       60,
+       324.8,
+       540,
+       342.6
+      ],
+      [
+       60,
+       343.6,
+       540,
+       361.40000000000003
+      ],
+      [
+       60,
+       362.4,
+       540,
+       380.2
+      ],
+      [
+       60,
+       381.2,
+       540,
+       399
+      ],
+      [
+       60,
+       420,
+       540,
+       436.00000000000006
+      ],
+      [
+       60,
+       440.00000000000006,
+       540,
+       455.99999999999994
+      ],
+      [
+       60,
+       459.99999999999994,
+       540,
+       476
+      ],
+      [
+       60,
+       480,
+       540,
+       496
+      ],
+      [
+       60,
+       500,
+       540,
+       516
+      ],
+      [
+       60,
+       520,
+       540,
+       536
+      ],
+      [
+       60,
+       540,
+       540,
+       556
+      ],
+      [
+       60,
+       560,
+       540,
+       576
+      ],
+      [
+       60,
+       580,
+       540,
+       596
+      ],
+      [
+       70,
+       610,
+       540,
+       627.3333333333334
+      ],
+      [
+       60,
+       628.3333333333334,
+       540,
+       645.6666666666667
+      ],
+      [
+       60,
+       646.6666666666666,
+       540,
+       664
+      ],
+      [
+       60,
+       665,
+       540,
+       682.3333333333334
+      ],
+      [
+       60,
+       683.3333333333334,
+       540,
+       700.6666666666667
+      ],
+      [
+       60,
+       701.6666666666666,
+       540,
+       719
+      ]
+     ]
+    }
+   },
+   {
+    "index": 2,
+    "width": 600,
+    "height": 800,
+    "blocks": [
+     {
+      "id": "p002_b0001",
+      "page": 2,
+      "type": "text",
+      "kind": "text",
+      "bbox": [
+       60,
+       60,
+       540,
+       220
+      ],
+      "text": "The and simulations the while at conditions and flow curve through density\npreviously water of. Shock gauges initial bubble equilibrium shock bubble wall and\npressure reference using follows of toward. Against fixed against the shock using\nfield the compression of the remain and through the. The compare described\nthe described curve and toward gauges calibrated the water and remain while.\nDescribed the conditions conditions relaxes relaxes initial of propagates through compare flow\ntoward and boundary. Boundary bubble curve conditions results numerical against toward using\nand calibrated bubble state the previously. Flow the and we compare the\nand the shock conditions flow the remain follows flow.",
+      "translatedText": "合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果。",
+      "formulas": [],
+      "formulaItems": [],
+      "imagePath": "",
+      "imageURL": "",
+      "lineCount": 9,
+      "fontSize": 12.143146215046578,
+      "translatable": true
+     },
+     {
+      "id": "p002_b0002",
+      "page": 2,
+      "type": "text",
+      "kind": "text",
+      "bbox": [
+       60,
+       226,
+       250,
+       240
+      ],
+      "text": "Substituting the relation gives",
+      "translatedText": "成数据分析冲击波在水中的传播。",
+      "formulas": [],
+      "formulaItems": [],
+      "imagePath": "",
+      "imageURL": "",
+      "lineCount": 1,
+      "fontSize": 10.08,
+      "translatable": true
+     },
+     {
+      "id": "p002_v0003",
+      "page": 2,
+      "type": "interline_equation",
+      "kind": "formula",
+      "bbox": [
+       200,
+       246,
+       400,
+       276
+      ],
+      "text": "p = \\rho_0 u_s u_p \\tag{3}",
+      "translatedText": "",
+      "formulas": [
+       "p = \\rho_0 u_s u_p \\tag{3}"
+      ],
+      "formulaItems": [
+       {
+        "id": "p002_f0001",
+        "page": 2,
+        "type": "interline_equation",
+        "tex": "p = \\rho_0 u_s u_p \\tag{3}"
+       }
+      ],
+      "imagePath": "",
+      "imageURL": "",
+      "lineCount": 1,
+      "fontSize": 15.273506473629427,
+      "translatable": false
+     },
+     {
+      "id": "p002_b0003",
+      "page": 2,
+      "type": "text",
+      "kind": "text",
+      "bbox": [
+       60,
+       282,
+       300,
+       296
+      ],
+      "text": "and similarly for energy,",
+      "translatedText": "数据分析冲击波在水中的。",
+      "formulas": [],
+      "formulaItems": [],
+      "imagePath": "",
+      "imageURL": "",
+      "lineCount": 1,
+      "fontSize": 10.08,
+      "translatable": true
+     },
+     {
+      "id": "p002_v0005",
+      "page": 2,
+      "type": "interline_equation",
+      "kind": "formula",
+      "bbox": [
+       200,
+       302,
+       400,
+       332
+      ],
+      "text": "E - E_0 = \\tfrac12 p (V_0 - V) \\tag{4}",
+      "translatedText": "",
+      "formulas": [
+       "E - E_0 = \\tfrac12 p (V_0 - V) \\tag{4}"
+      ],
+      "formulaItems": [
+       {
+        "id": "p002_f0002",
+        "page": 2,
+        "type": "interline_equation",
+        "tex": "E - E_0 = \\tfrac12 p (V_0 - V) \\tag{4}"
+       }
+      ],
+      "imagePath": "",
+      "imageURL": "",
+      "lineCount": 1,
+      "fontSize": 12.470765814495914,
+      "translatable": false
+     },
+     {
+      "id": "p002_b0004",
+      "page": 2,
+      "type": "text",
+      "kind": "text",
+      "bbox": [
+       60,
+       340,
+       540,
+       520
+      ],
+      "text": "The of and compression propagates the reference and relaxes pressure equilibrium conditions\nconditions the bubble. The and field flow reference simulations we initial propagates\npressure against propagates compression and the. Calibrated boundary described wall previously conditions\nresults the shock numerical shock and gauges density remain. Measure water toward\nconditions fixed fixed boundary compare against water described described gauges the compression.\nWhile shock water water the the the previously using and the using\nremain results against. Fixed described expands field the numerical initial we simulations\nequilibrium flow bubble the initial wall. And follows through expands of results\nboundary calibrated using and bubble expands the fixed shock. The the the\ngauges the conditions flow using and initial density results curve using remain.",
+      "translatedText": "据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测。",
+      "formulas": [],
+      "formulaItems": [],
+      "imagePath": "",
+      "imageURL": "",
+      "lineCount": 10,
+      "fontSize": 11.366671930219098,
+      "translatable": true
+     },
+     {
+      "id": "p002_b0005",
+      "page": 2,
+      "type": "text",
+      "kind": "text",
+      "bbox": [
+       60,
+       526,
+       540,
+       720
+      ],
+      "text": "We calibrated the initial field shock curve and measure through water density\nthe compression and. The the state water fixed the previously while relaxes\nwater the the calibrated shock through. The the results the bubble water\ncompression relaxes water and fixed curve relaxes at flow. Using curve fixed\nand pressure shock numerical and calibrated the at gauges the the relaxes.\nRemain fixed initial expands density and through results relaxes water field the\nmeasure remain the. Compare calibrated the simulations curve the compare toward using\nwall initial calibrated and the previously. Expands previously initial relaxes gauges the\nthe equilibrium curve numerical measure and against state follows. The compare pressure\nwe pressure against boundary toward and the compare and and initial follows.",
+      "translatedText": "分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差。",
+      "formulas": [],
+      "formulaItems": [],
+      "imagePath": "",
+      "imageURL": "",
+      "lineCount": 10,
+      "fontSize": 12.250746413680583,
+      "translatable": true
+     }
+    ],
+    "restoration": {
+     "streams": [
+      {
+       "side": "full",
+       "columnKey": "column-0",
+       "items": [
+        {
+         "id": "p002_b0001",
+         "kind": "text",
+         "type": "text",
+         "bbox": [
+          60,
+          60,
+          540,
+          220
+         ],
+         "html": "The and simulations the while at conditions and flow curve through density previously water of. Shock gauges initial bubble equilibrium shock bubble wall and pressure reference using follows of toward. Against fixed against the shock using field the compression of the remain and through the. The compare described the described curve and toward gauges calibrated the water and remain while. Described the conditions conditions relaxes relaxes initial of propagates through compare flow toward and boundary. Boundary bubble curve conditions results numerical against toward using and calibrated bubble state the previously. Flow the and we compare the and the shock conditions flow the remain follows flow.",
+         "text": "The and simulations the while at conditions and flow curve through density\npreviously water of. Shock gauges initial bubble equilibrium shock bubble wall and\npressure reference using follows of toward. Against fixed against the shock using\nfield the compression of the remain and through the. The compare described\nthe described curve and toward gauges calibrated the water and remain while.\nDescribed the conditions conditions relaxes relaxes initial of propagates through compare flow\ntoward and boundary. Boundary bubble curve conditions results numerical against toward using\nand calibrated bubble state the previously. Flow the and we compare the\nand the shock conditions flow the remain follows flow.",
+         "translatedText": "合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果。",
+         "roleText": "The and simulations the while at conditions and flow curve through density\npreviously water of. Shock gauges initial bubble equilibrium shock bubble wall and\npressure reference using follows of toward. Against fixed against the shock using\nfield the compression of the remain and through the. The compare described\nthe described curve and toward gauges calibrated the water and remain while.\nDescribed the conditions conditions relaxes relaxes initial of propagates through compare flow\ntoward and boundary. Boundary bubble curve conditions results numerical against toward using\nand calibrated bubble state the previously. Flow the and we compare the\nand the shock conditions flow the remain follows flow.",
+         "originalLineCount": 9,
+         "debugLines": [
+          [
+           70,
+           60,
+           540,
+           76.77777777777777
+          ],
+          [
+           60,
+           77.77777777777777,
+           540,
+           94.55555555555554
+          ],
+          [
+           60,
+           95.55555555555556,
+           540,
+           112.33333333333334
+          ],
+          [
+           60,
+           113.33333333333334,
+           540,
+           130.11111111111111
+          ],
+          [
+           60,
+           131.11111111111111,
+           540,
+           147.88888888888889
+          ],
+          [
+           60,
+           148.88888888888889,
+           540,
+           165.66666666666666
+          ],
+          [
+           60,
+           166.66666666666669,
+           540,
+           183.44444444444446
+          ],
+          [
+           60,
+           184.44444444444446,
+           540,
+           201.22222222222223
+          ],
+          [
+           60,
+           202.22222222222223,
+           540,
+           219
+          ]
+         ],
+         "fontEstimate": 11,
+         "side": "full",
+         "indent": 10,
+         "pageIndex": 1,
+         "debugRole": "text",
+         "tocRows": null,
+         "symbolGlossary": false,
+         "paragraphs": [],
+         "fromList": false,
+         "columnKey": "column-0"
+        }
+       ],
+       "bbox": [
+        60,
+        60,
+        540,
+        220
+       ],
+       "pageIndex": 1,
+       "debugRole": "text",
+       "fontSize": 7.6,
+       "lineHeight": 1.28,
+       "paragraphGap": 0.16,
+       "styleKind": "text",
+       "bodyInherited": false,
+       "refsOnly": false,
+       "equationDense": false
+      },
+      {
+       "side": "full",
+       "columnKey": "column-0",
+       "items": [
+        {
+         "id": "p002_b0004",
+         "kind": "text",
+         "type": "text",
+         "bbox": [
+          60,
+          340,
+          540,
+          520
+         ],
+         "html": "The of and compression propagates the reference and relaxes pressure equilibrium conditions conditions the bubble. The and field flow reference simulations we initial propagates pressure against propagates compression and the. Calibrated boundary described wall previously conditions results the shock numerical shock and gauges density remain. Measure water toward conditions fixed fixed boundary compare against water described described gauges the compression. While shock water water the the the previously using and the using remain results against. Fixed described expands field the numerical initial we simulations equilibrium flow bubble the initial wall. And follows through expands of results boundary calibrated using and bubble expands the fixed shock. The the the gauges the conditions flow using and initial density results curve using remain.",
+         "text": "The of and compression propagates the reference and relaxes pressure equilibrium conditions\nconditions the bubble. The and field flow reference simulations we initial propagates\npressure against propagates compression and the. Calibrated boundary described wall previously conditions\nresults the shock numerical shock and gauges density remain. Measure water toward\nconditions fixed fixed boundary compare against water described described gauges the compression.\nWhile shock water water the the the previously using and the using\nremain results against. Fixed described expands field the numerical initial we simulations\nequilibrium flow bubble the initial wall. And follows through expands of results\nboundary calibrated using and bubble expands the fixed shock. The the the\ngauges the conditions flow using and initial density results curve using remain.",
+         "translatedText": "据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测。",
+         "roleText": "The of and compression propagates the reference and relaxes pressure equilibrium conditions\nconditions the bubble. The and field flow reference simulations we initial propagates\npressure against propagates compression and the. Calibrated boundary described wall previously conditions\nresults the shock numerical shock and gauges density remain. Measure water toward\nconditions fixed fixed boundary compare against water described described gauges the compression.\nWhile shock water water the the the previously using and the using\nremain results against. Fixed described expands field the numerical initial we simulations\nequilibrium flow bubble the initial wall. And follows through expands of results\nboundary calibrated using and bubble expands the fixed shock. The the the\ngauges the conditions flow using and initial density results curve using remain.",
+         "originalLineCount": 10,
+         "debugLines": [
+          [
+           70,
+           340,
+           540,
+           357
+          ],
+          [
+           60,
+           358,
+           540,
+           375
+          ],
+          [
+           60,
+           376,
+           540,
+           393
+          ],
+          [
+           60,
+           394,
+           540,
+           411
+          ],
+          [
+           60,
+           412,
+           540,
+           429
+          ],
+          [
+           60,
+           430,
+           540,
+           447
+          ],
+          [
+           60,
+           448,
+           540,
+           465
+          ],
+          [
+           60,
+           466,
+           540,
+           483
+          ],
+          [
+           60,
+           484,
+           540,
+           501
+          ],
+          [
+           60,
+           502,
+           540,
+           519
+          ]
+         ],
+         "fontEstimate": 11,
+         "side": "full",
+         "indent": 10,
+         "pageIndex": 1,
+         "debugRole": "text",
+         "tocRows": null,
+         "symbolGlossary": false,
+         "paragraphs": [],
+         "fromList": false,
+         "columnKey": "column-0"
+        }
+       ],
+       "bbox": [
+        60,
+        340,
+        540,
+        520
+       ],
+       "pageIndex": 1,
+       "debugRole": "text",
+       "fontSize": 7.6,
+       "lineHeight": 1.28,
+       "paragraphGap": 0.16,
+       "styleKind": "text",
+       "bodyInherited": false,
+       "refsOnly": false,
+       "equationDense": false
+      },
+      {
+       "side": "full",
+       "columnKey": "column-0",
+       "items": [
+        {
+         "id": "p002_b0005",
+         "kind": "text",
+         "type": "text",
+         "bbox": [
+          60,
+          526,
+          540,
+          720
+         ],
+         "html": "We calibrated the initial field shock curve and measure through water density the compression and. The the state water fixed the previously while relaxes water the the calibrated shock through. The the results the bubble water compression relaxes water and fixed curve relaxes at flow. Using curve fixed and pressure shock numerical and calibrated the at gauges the the relaxes. Remain fixed initial expands density and through results relaxes water field the measure remain the. Compare calibrated the simulations curve the compare toward using wall initial calibrated and the previously. Expands previously initial relaxes gauges the the equilibrium curve numerical measure and against state follows. The compare pressure we pressure against boundary toward and the compare and and initial follows.",
+         "text": "We calibrated the initial field shock curve and measure through water density\nthe compression and. The the state water fixed the previously while relaxes\nwater the the calibrated shock through. The the results the bubble water\ncompression relaxes water and fixed curve relaxes at flow. Using curve fixed\nand pressure shock numerical and calibrated the at gauges the the relaxes.\nRemain fixed initial expands density and through results relaxes water field the\nmeasure remain the. Compare calibrated the simulations curve the compare toward using\nwall initial calibrated and the previously. Expands previously initial relaxes gauges the\nthe equilibrium curve numerical measure and against state follows. The compare pressure\nwe pressure against boundary toward and the compare and and initial follows.",
+         "translatedText": "分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差。",
+         "roleText": "We calibrated the initial field shock curve and measure through water density\nthe compression and. The the state water fixed the previously while relaxes\nwater the the calibrated shock through. The the results the bubble water\ncompression relaxes water and fixed curve relaxes at flow. Using curve fixed\nand pressure shock numerical and calibrated the at gauges the the relaxes.\nRemain fixed initial expands density and through results relaxes water field the\nmeasure remain the. Compare calibrated the simulations curve the compare toward using\nwall initial calibrated and the previously. Expands previously initial relaxes gauges the\nthe equilibrium curve numerical measure and against state follows. The compare pressure\nwe pressure against boundary toward and the compare and and initial follows.",
+         "originalLineCount": 10,
+         "debugLines": [
+          [
+           70,
+           526,
+           540,
+           544.4
+          ],
+          [
+           60,
+           545.4,
+           540,
+           563.8
+          ],
+          [
+           60,
+           564.8,
+           540,
+           583.1999999999999
+          ],
+          [
+           60,
+           584.2,
+           540,
+           602.6
+          ],
+          [
+           60,
+           603.6,
+           540,
+           622
+          ],
+          [
+           60,
+           623,
+           540,
+           641.4
+          ],
+          [
+           60,
+           642.4,
+           540,
+           660.8
+          ],
+          [
+           60,
+           661.8,
+           540,
+           680.1999999999999
+          ],
+          [
+           60,
+           681.2,
+           540,
+           699.6
+          ],
+          [
+           60,
+           700.6,
+           540,
+           719
+          ]
+         ],
+         "fontEstimate": 11,
+         "side": "full",
+         "indent": 10,
+         "pageIndex": 1,
+         "debugRole": "text",
+         "tocRows": null,
+         "symbolGlossary": false,
+         "paragraphs": [],
+         "fromList": false,
+         "columnKey": "column-0"
+        }
+       ],
+       "bbox": [
+        60,
+        526,
+        540,
+        720
+       ],
+       "pageIndex": 1,
+       "debugRole": "text",
+       "fontSize": 7.6,
+       "lineHeight": 1.28,
+       "paragraphGap": 0.16,
+       "styleKind": "text",
+       "bodyInherited": false,
+       "refsOnly": false,
+       "equationDense": false
+      },
+      {
+       "side": "left",
+       "columnKey": "column-0",
+       "items": [
+        {
+         "id": "p002_b0002",
+         "kind": "text",
+         "type": "text",
+         "bbox": [
+          60,
+          226,
+          250,
+          240
+         ],
+         "html": "Substituting the relation gives",
+         "text": "Substituting the relation gives",
+         "translatedText": "成数据分析冲击波在水中的传播。",
+         "roleText": "Substituting the relation gives",
+         "originalLineCount": 1,
+         "debugLines": [],
+         "fontEstimate": 11,
+         "side": "left",
+         "indent": 0,
+         "pageIndex": 1,
+         "debugRole": "text",
+         "tocRows": null,
+         "symbolGlossary": false,
+         "paragraphs": [],
+         "fromList": false,
+         "columnKey": "column-0"
+        }
+       ],
+       "bbox": [
+        60,
+        226,
+        250,
+        240
+       ],
+       "pageIndex": 1,
+       "debugRole": "text",
+       "fontSize": 7.6,
+       "lineHeight": 1.28,
+       "paragraphGap": 0.16,
+       "styleKind": "text",
+       "bodyInherited": false,
+       "refsOnly": false,
+       "equationDense": false
+      },
+      {
+       "side": "left",
+       "columnKey": "column-0",
+       "items": [
+        {
+         "id": "p002_b0003",
+         "kind": "text",
+         "type": "text",
+         "bbox": [
+          60,
+          282,
+          300,
+          296
+         ],
+         "html": "and similarly for energy,",
+         "text": "and similarly for energy,",
+         "translatedText": "数据分析冲击波在水中的。",
+         "roleText": "and similarly for energy,",
+         "originalLineCount": 1,
+         "debugLines": [],
+         "fontEstimate": 11,
+         "side": "left",
+         "indent": 0,
+         "pageIndex": 1,
+         "debugRole": "text",
+         "tocRows": null,
+         "symbolGlossary": false,
+         "paragraphs": [],
+         "fromList": false,
+         "columnKey": "column-0"
+        }
+       ],
+       "bbox": [
+        60,
+        282,
+        300,
+        296
+       ],
+       "pageIndex": 1,
+       "debugRole": "text",
+       "fontSize": 7.6,
+       "lineHeight": 1.28,
+       "paragraphGap": 0.16,
+       "styleKind": "text",
+       "bodyInherited": false,
+       "refsOnly": false,
+       "equationDense": false
+      }
+     ],
+     "absoluteBlocks": [
+      {
+       "id": "p002_v0003",
+       "type": "interline_equation",
+       "kind": "formula",
+       "bbox": [
+        200,
+        246,
+        400,
+        276
+       ],
+       "text": "p = \\rho_0 u_s u_p \\tag{3}",
+       "translatedText": "",
+       "sourceHTML": "p = \\rho_0 u_s u_p \\tag{3}",
+       "tableHTML": "",
+       "imagePath": "",
+       "imageURL": "",
+       "formulaItems": [
+        {
+         "id": "p002_f0001",
+         "page": 2,
+         "type": "interline_equation",
+         "tex": "p = \\rho_0 u_s u_p \\tag{3}"
+        }
+       ],
+       "formulas": [
+        "p = \\rho_0 u_s u_p \\tag{3}"
+       ],
+       "codeLanguage": "",
+       "lineCount": 1,
+       "fontSize": 11,
+       "lineHeight": 1.12,
+       "debugLines": [],
+       "numberRight": 540
+      },
+      {
+       "id": "p002_v0005",
+       "type": "interline_equation",
+       "kind": "formula",
+       "bbox": [
+        200,
+        302,
+        400,
+        332
+       ],
+       "text": "E - E_0 = \\tfrac12 p (V_0 - V) \\tag{4}",
+       "translatedText": "",
+       "sourceHTML": "E - E_0 = \\tfrac12 p (V_0 - V) \\tag{4}",
+       "tableHTML": "",
+       "imagePath": "",
+       "imageURL": "",
+       "formulaItems": [
+        {
+         "id": "p002_f0002",
+         "page": 2,
+         "type": "interline_equation",
+         "tex": "E - E_0 = \\tfrac12 p (V_0 - V) \\tag{4}"
+        }
+       ],
+       "formulas": [
+        "E - E_0 = \\tfrac12 p (V_0 - V) \\tag{4}"
+       ],
+       "codeLanguage": "",
+       "lineCount": 1,
+       "fontSize": 11,
+       "lineHeight": 1.12,
+       "debugLines": [],
+       "numberRight": 540
+      },
+      {
+       "id": "",
+       "type": "page_footer",
+       "kind": "text",
+       "bbox": [
+        60,
+        770,
+        540,
+        782
+       ],
+       "text": "Technical report TR-26 page 2",
+       "translatedText": "",
+       "sourceHTML": "Technical report TR-26 page 2",
+       "tableHTML": "",
+       "imagePath": "",
+       "imageURL": "",
+       "formulaItems": [],
+       "formulas": [],
+       "codeLanguage": "",
+       "lineCount": 1,
+       "fontSize": 10,
+       "lineHeight": 1.12,
+       "debugLines": [],
+       "sourceOnly": true
+      }
+     ],
+     "ocrBoxes": [
+      [
+       70,
+       60,
+       540,
+       76.77777777777777
+      ],
+      [
+       60,
+       77.77777777777777,
+       540,
+       94.55555555555554
+      ],
+      [
+       60,
+       95.55555555555556,
+       540,
+       112.33333333333336
+      ],
+      [
+       60,
+       113.33333333333336,
+       540,
+       130.11111111111111
+      ],
+      [
+       60,
+       131.11111111111111,
+       540,
+       147.88888888888889
+      ],
+      [
+       60,
+       148.88888888888889,
+       540,
+       165.66666666666666
+      ],
+      [
+       60,
+       166.66666666666669,
+       540,
+       183.44444444444446
+      ],
+      [
+       60,
+       184.44444444444446,
+       540,
+       201.22222222222223
+      ],
+      [
+       60,
+       202.22222222222223,
+       540,
+       219
+      ],
+      [
+       70,
+       340,
+       540,
+       357
+      ],
+      [
+       60,
+       358,
+       540,
+       375
+      ],
+      [
+       60,
+       376,
+       540,
+       393
+      ],
+      [
+       60,
+       394,
+       540,
+       411.00000000000006
+      ],
+      [
+       60,
+       412,
+       540,
+       429
+      ],
+      [
+       60,
+       430,
+       540,
+       447
+      ],
+      [
+       60,
+       448.00000000000006,
+       540,
+       465.00000000000006
+      ],
+      [
+       60,
+       466,
+       540,
+       483
+      ],
+      [
+       60,
+       484,
+       540,
+       501
+      ],
+      [
+       60,
+       501.99999999999994,
+       540,
+       519
+      ],
+      [
+       70,
+       526,
+       540,
+       544.4
+      ],
+      [
+       60,
+       545.4,
+       540,
+       563.8
+      ],
+      [
+       60,
+       564.8,
+       540,
+       583.1999999999999
+      ],
+      [
+       60,
+       584.2,
+       540,
+       602.6
+      ],
+      [
+       60,
+       603.6,
+       540,
+       622
+      ],
+      [
+       60,
+       623,
+       540,
+       641.4
+      ],
+      [
+       60,
+       642.4,
+       540,
+       660.8
+      ],
+      [
+       60,
+       661.8,
+       540,
+       680.1999999999999
+      ],
+      [
+       60,
+       681.2,
+       540,
+       699.6
+      ],
+      [
+       60,
+       700.6,
+       540,
+       719
+      ]
+     ]
+    }
+   },
+   {
+    "index": 3,
+    "width": 600,
+    "height": 800,
+    "blocks": [
+     {
+      "id": "p003_v0001",
+      "page": 3,
+      "type": "chart",
+      "kind": "text",
+      "bbox": [
+       80,
+       80,
+       520,
+       500
+      ],
+      "text": "",
+      "translatedText": "",
+      "formulas": [],
+      "formulaItems": [],
+      "imagePath": "",
+      "imageURL": "",
+      "lineCount": 1,
+      "fontSize": 18,
+      "translatable": false
+     },
+     {
+      "id": "p003_v0002",
+      "page": 3,
+      "type": "chart_body",
+      "kind": "image",
+      "bbox": [
+       80,
+       80,
+       520,
+       470
+      ],
+      "text": "",
+      "translatedText": "",
+      "formulas": [],
+      "formulaItems": [],
+      "imagePath": "images/chart.png",
+      "imageURL": "resource://litmtrans-data/single-column-report-promotion-off/assets/chart.png",
+      "lineCount": 1,
+      "fontSize": 18,
+      "translatable": false
+     },
+     {
+      "id": "p003_c0001",
+      "page": 3,
+      "type": "chart_caption",
+      "kind": "text",
+      "bbox": [
+       80,
+       474,
+       520,
+       500
+      ],
+      "text": "Fig. 2. Hugoniot of water compared\nwith the fitted linear relation.",
+      "translatedText": "",
+      "formulas": [],
+      "formulaItems": [],
+      "imagePath": "",
+      "imageURL": "",
+      "lineCount": 2,
+      "fontSize": 8.424,
+      "translatable": true
+     },
+     {
+      "id": "p003_v0004",
+      "page": 3,
+      "type": "interline_equation",
+      "kind": "image",
+      "bbox": [
+       150,
+       520,
+       450,
+       550
+      ],
+      "text": "",
+      "translatedText": "",
+      "formulas": [],
+      "formulaItems": [],
+      "imagePath": "images/eq-crop.png",
+      "imageURL": "resource://litmtrans-data/single-column-report-promotion-off/assets/eq-crop.png",
+      "lineCount": 1,
+      "fontSize": 18,
+      "translatable": false
+     }
+    ],
+    "restoration": {
+     "streams": [],
+     "absoluteBlocks": [
+      {
+       "id": "p003_v0002",
+       "type": "chart_body",
+       "kind": "image",
+       "bbox": [
+        80,
+        80,
+        520,
+        470
+       ],
+       "text": "",
+       "translatedText": "",
+       "sourceHTML": "",
+       "tableHTML": "",
+       "imagePath": "images/chart.png",
+       "imageURL": "resource://litmtrans-data/single-column-report-promotion-off/assets/chart.png",
+       "formulaItems": [],
+       "formulas": [],
+       "codeLanguage": "",
+       "lineCount": 1,
+       "fontSize": 18,
+       "lineHeight": 1.12,
+       "debugLines": []
+      },
+      {
+       "id": "p003_c0001",
+       "type": "chart_caption",
+       "kind": "text",
+       "bbox": [
+        80,
+        474,
+        520,
+        500
+       ],
+       "text": "Fig. 2. Hugoniot of water compared\nwith the fitted linear relation.",
+       "translatedText": "",
+       "sourceHTML": "Fig. 2. Hugoniot of water compared<br />with the fitted linear relation.",
+       "tableHTML": "",
+       "imagePath": "",
+       "imageURL": "",
+       "formulaItems": [],
+       "formulas": [],
+       "codeLanguage": "",
+       "lineCount": 2,
+       "fontSize": 7.6,
+       "lineHeight": 1.2,
+       "debugLines": [
+        [
+         90,
+         474,
+         520,
+         486
+        ],
+        [
+         80,
+         487,
+         520,
+         499
+        ]
+       ]
+      },
+      {
+       "id": "p003_v0004",
+       "type": "interline_equation",
+       "kind": "image",
+       "bbox": [
+        150,
+        520,
+        450,
+        550
+       ],
+       "text": "",
+       "translatedText": "",
+       "sourceHTML": "",
+       "tableHTML": "",
+       "imagePath": "images/eq-crop.png",
+       "imageURL": "resource://litmtrans-data/single-column-report-promotion-off/assets/eq-crop.png",
+       "formulaItems": [],
+       "formulas": [],
+       "codeLanguage": "",
+       "lineCount": 1,
+       "fontSize": 18,
+       "lineHeight": 1.12,
+       "debugLines": []
+      }
+     ],
+     "ocrBoxes": []
+    }
+   },
+   {
+    "index": 4,
+    "width": 600,
+    "height": 800,
+    "blocks": [
+     {
+      "id": "p004_b0001",
+      "page": 4,
+      "type": "text",
+      "kind": "text",
+      "bbox": [
+       60,
+       60,
+       540,
+       260
+      ],
+      "text": "The relaxes the at flow bubble the field using compression initial described the\npreviously equilibrium. Results the the the toward bubble fixed water initial initial remain\nfield shock and the. Gauges density and results gauges the previously compare shock\ncompression measure initial field shock water. Measure remain conditions the compression the expands\nagainst the results field boundary density water the. Remain gauges compare while the\nwater we conditions we initial follows at state conditions initial. While shock fixed\nstate calibrated field initial while the the compression pressure numerical gauges toward. The\nat at numerical field we while reference we and flow measure reference fixed\ndescribed. The calibrated remain compare fixed at numerical calibrated state the curve conditions\nand measure remain. Fixed boundary bubble simulations compare the gauges through results using\nand the compare flow the.",
+      "translatedText": "冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的。",
+      "formulas": [],
+      "formulaItems": [],
+      "imagePath": "",
+      "imageURL": "",
+      "lineCount": 11,
+      "fontSize": 11.603850681965477,
+      "translatable": true
+     },
+     {
+      "id": "p004_b0002",
+      "page": 4,
+      "type": "text",
+      "kind": "text",
+      "bbox": [
+       60,
+       266,
+       230,
+       280
+      ],
+      "text": "The final step follows.",
+      "translatedText": "击波在水中的传播并比。",
+      "formulas": [],
+      "formulaItems": [],
+      "imagePath": "",
+      "imageURL": "",
+      "lineCount": 1,
+      "fontSize": 10.08,
+      "translatable": true
+     },
+     {
+      "id": "p004_b0003",
+      "page": 4,
+      "type": "text",
+      "kind": "text",
+      "bbox": [
+       60,
+       286,
+       540,
+       420
+      ],
+      "text": "The using the and initial water the wave results relaxes propagates and calibrated\nthrough at. Compression conditions bubble simulations at through remain the conditions and the\nsimulations using of bubble. Numerical measure conditions the water the the using fixed\nwall initial toward the expands propagates. And the at flow the the the\nand and fixed curve against of fixed the. Curve wave relaxes conditions wall\nthe follows expands using through fixed and the pressure flow. Reference density shock\nagainst and simulations simulations bubble water remain simulations the the propagates and.",
+      "translatedText": "波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并。",
+      "formulas": [],
+      "formulaItems": [],
+      "imagePath": "",
+      "imageURL": "",
+      "lineCount": 7,
+      "fontSize": 12.155337451976747,
+      "translatable": true
+     }
+    ],
+    "restoration": {
+     "streams": [
+      {
+       "side": "full",
+       "columnKey": "column-0",
+       "items": [
+        {
+         "id": "p004_b0001",
+         "kind": "text",
+         "type": "text",
+         "bbox": [
+          60,
+          60,
+          540,
+          260
+         ],
+         "html": "The relaxes the at flow bubble the field using compression initial described the previously equilibrium. Results the the the toward bubble fixed water initial initial remain field shock and the. Gauges density and results gauges the previously compare shock compression measure initial field shock water. Measure remain conditions the compression the expands against the results field boundary density water the. Remain gauges compare while the water we conditions we initial follows at state conditions initial. While shock fixed state calibrated field initial while the the compression pressure numerical gauges toward. The at at numerical field we while reference we and flow measure reference fixed described. The calibrated remain compare fixed at numerical calibrated state the curve conditions and measure remain. Fixed boundary bubble simulations compare the gauges through results using and the compare flow the.",
+         "text": "The relaxes the at flow bubble the field using compression initial described the\npreviously equilibrium. Results the the the toward bubble fixed water initial initial remain\nfield shock and the. Gauges density and results gauges the previously compare shock\ncompression measure initial field shock water. Measure remain conditions the compression the expands\nagainst the results field boundary density water the. Remain gauges compare while the\nwater we conditions we initial follows at state conditions initial. While shock fixed\nstate calibrated field initial while the the compression pressure numerical gauges toward. The\nat at numerical field we while reference we and flow measure reference fixed\ndescribed. The calibrated remain compare fixed at numerical calibrated state the curve conditions\nand measure remain. Fixed boundary bubble simulations compare the gauges through results using\nand the compare flow the.",
+         "translatedText": "冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的。",
+         "roleText": "The relaxes the at flow bubble the field using compression initial described the\npreviously equilibrium. Results the the the toward bubble fixed water initial initial remain\nfield shock and the. Gauges density and results gauges the previously compare shock\ncompression measure initial field shock water. Measure remain conditions the compression the expands\nagainst the results field boundary density water the. Remain gauges compare while the\nwater we conditions we initial follows at state conditions initial. While shock fixed\nstate calibrated field initial while the the compression pressure numerical gauges toward. The\nat at numerical field we while reference we and flow measure reference fixed\ndescribed. The calibrated remain compare fixed at numerical calibrated state the curve conditions\nand measure remain. Fixed boundary bubble simulations compare the gauges through results using\nand the compare flow the.",
+         "originalLineCount": 11,
+         "debugLines": [
+          [
+           70,
+           60,
+           540,
+           77.18181818181819
+          ],
+          [
+           60,
+           78.18181818181819,
+           540,
+           95.36363636363637
+          ],
+          [
+           60,
+           96.36363636363637,
+           540,
+           113.54545454545456
+          ],
+          [
+           60,
+           114.54545454545455,
+           540,
+           131.72727272727272
+          ],
+          [
+           60,
+           132.72727272727275,
+           540,
+           149.90909090909093
+          ],
+          [
+           60,
+           150.90909090909093,
+           540,
+           168.09090909090912
+          ],
+          [
+           60,
+           169.0909090909091,
+           540,
+           186.27272727272728
+          ],
+          [
+           60,
+           187.27272727272728,
+           540,
+           204.45454545454547
+          ],
+          [
+           60,
+           205.45454545454547,
+           540,
+           222.63636363636365
+          ],
+          [
+           60,
+           223.63636363636365,
+           540,
+           240.81818181818184
+          ],
+          [
+           60,
+           241.81818181818184,
+           540,
+           259
+          ]
+         ],
+         "fontEstimate": 11,
+         "side": "full",
+         "indent": 10,
+         "pageIndex": 3,
+         "debugRole": "text",
+         "tocRows": null,
+         "symbolGlossary": false,
+         "paragraphs": [],
+         "fromList": false,
+         "columnKey": "column-0"
+        }
+       ],
+       "bbox": [
+        60,
+        60,
+        540,
+        260
+       ],
+       "pageIndex": 3,
+       "debugRole": "text",
+       "fontSize": 7.6,
+       "lineHeight": 1.28,
+       "paragraphGap": 0.16,
+       "styleKind": "text",
+       "bodyInherited": false,
+       "refsOnly": false,
+       "equationDense": false
+      },
+      {
+       "side": "full",
+       "columnKey": "column-0",
+       "items": [
+        {
+         "id": "p004_b0003",
+         "kind": "text",
+         "type": "text",
+         "bbox": [
+          60,
+          286,
+          540,
+          420
+         ],
+         "html": "The using the and initial water the wave results relaxes propagates and calibrated through at. Compression conditions bubble simulations at through remain the conditions and the simulations using of bubble. Numerical measure conditions the water the the using fixed wall initial toward the expands propagates. And the at flow the the the and and fixed curve against of fixed the. Curve wave relaxes conditions wall the follows expands using through fixed and the pressure flow. Reference density shock against and simulations simulations bubble water remain simulations the the propagates and.",
+         "text": "The using the and initial water the wave results relaxes propagates and calibrated\nthrough at. Compression conditions bubble simulations at through remain the conditions and the\nsimulations using of bubble. Numerical measure conditions the water the the using fixed\nwall initial toward the expands propagates. And the at flow the the the\nand and fixed curve against of fixed the. Curve wave relaxes conditions wall\nthe follows expands using through fixed and the pressure flow. Reference density shock\nagainst and simulations simulations bubble water remain simulations the the propagates and.",
+         "translatedText": "波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并比较测量结果与数值模拟之间的差异本研究采用合成数据分析冲击波在水中的传播并。",
+         "roleText": "The using the and initial water the wave results relaxes propagates and calibrated\nthrough at. Compression conditions bubble simulations at through remain the conditions and the\nsimulations using of bubble. Numerical measure conditions the water the the using fixed\nwall initial toward the expands propagates. And the at flow the the the\nand and fixed curve against of fixed the. Curve wave relaxes conditions wall\nthe follows expands using through fixed and the pressure flow. Reference density shock\nagainst and simulations simulations bubble water remain simulations the the propagates and.",
+         "originalLineCount": 7,
+         "debugLines": [
+          [
+           70,
+           286,
+           540,
+           304.14285714285717
+          ],
+          [
+           60,
+           305.14285714285717,
+           540,
+           323.28571428571433
+          ],
+          [
+           60,
+           324.2857142857143,
+           540,
+           342.42857142857144
+          ],
+          [
+           60,
+           343.42857142857144,
+           540,
+           361.5714285714286
+          ],
+          [
+           60,
+           362.57142857142856,
+           540,
+           380.7142857142857
+          ],
+          [
+           60,
+           381.7142857142857,
+           540,
+           399.8571428571429
+          ],
+          [
+           60,
+           400.8571428571429,
+           540,
+           419.00000000000006
+          ]
+         ],
+         "fontEstimate": 11,
+         "side": "full",
+         "indent": 10,
+         "pageIndex": 3,
+         "debugRole": "text",
+         "tocRows": null,
+         "symbolGlossary": false,
+         "paragraphs": [],
+         "fromList": false,
+         "columnKey": "column-0"
+        }
+       ],
+       "bbox": [
+        60,
+        286,
+        540,
+        420
+       ],
+       "pageIndex": 3,
+       "debugRole": "text",
+       "fontSize": 7.6,
+       "lineHeight": 1.28,
+       "paragraphGap": 0.16,
+       "styleKind": "text",
+       "bodyInherited": false,
+       "refsOnly": false,
+       "equationDense": false
+      },
+      {
+       "side": "left",
+       "columnKey": "column-0",
+       "items": [
+        {
+         "id": "p004_b0002",
+         "kind": "text",
+         "type": "text",
+         "bbox": [
+          60,
+          266,
+          230,
+          280
+         ],
+         "html": "The final step follows.",
+         "text": "The final step follows.",
+         "translatedText": "击波在水中的传播并比。",
+         "roleText": "The final step follows.",
+         "originalLineCount": 1,
+         "debugLines": [],
+         "fontEstimate": 11,
+         "side": "left",
+         "indent": 0,
+         "pageIndex": 3,
+         "debugRole": "text",
+         "tocRows": null,
+         "symbolGlossary": false,
+         "paragraphs": [],
+         "fromList": false,
+         "columnKey": "column-0"
+        }
+       ],
+       "bbox": [
+        60,
+        266,
+        230,
+        280
+       ],
+       "pageIndex": 3,
+       "debugRole": "text",
+       "fontSize": 7.6,
+       "lineHeight": 1.28,
+       "paragraphGap": 0.16,
+       "styleKind": "text",
+       "bodyInherited": false,
+       "refsOnly": false,
+       "equationDense": false
+      }
+     ],
+     "absoluteBlocks": [],
+     "ocrBoxes": [
+      [
+       70,
+       60,
+       540,
+       77.18181818181819
+      ],
+      [
+       60,
+       78.18181818181819,
+       540,
+       95.36363636363637
+      ],
+      [
+       60,
+       96.36363636363637,
+       540,
+       113.54545454545458
+      ],
+      [
+       60,
+       114.54545454545455,
+       540,
+       131.72727272727272
+      ],
+      [
+       60,
+       132.72727272727275,
+       540,
+       149.90909090909093
+      ],
+      [
+       60,
+       150.90909090909093,
+       540,
+       168.09090909090912
+      ],
+      [
+       60,
+       169.0909090909091,
+       540,
+       186.27272727272728
+      ],
+      [
+       60,
+       187.27272727272728,
+       540,
+       204.4545454545455
+      ],
+      [
+       60,
+       205.45454545454547,
+       540,
+       222.63636363636365
+      ],
+      [
+       60,
+       223.63636363636363,
+       540,
+       240.8181818181818
+      ],
+      [
+       60,
+       241.81818181818184,
+       540,
+       259
+      ],
+      [
+       70,
+       286,
+       540,
+       304.14285714285717
+      ],
+      [
+       60,
+       305.14285714285717,
+       540,
+       323.28571428571433
+      ],
+      [
+       60,
+       324.2857142857143,
+       540,
+       342.42857142857144
+      ],
+      [
+       60,
+       343.42857142857144,
+       540,
+       361.5714285714286
+      ],
+      [
+       60,
+       362.57142857142856,
+       540,
+       380.7142857142857
+      ],
+      [
+       60,
+       381.7142857142857,
+       540,
+       399.8571428571429
+      ],
+      [
+       60,
+       400.8571428571429,
+       540,
+       419.00000000000006
+      ]
+     ]
+    }
+   }
+  ]
+ }
+}

@@ -1,0 +1,269 @@
+{
+ "name": "code-and-contents",
+ "description": "testLayoutCodeAndContentsRules payload: TOC page and code/code_body block",
+ "layout": {
+  "pdf_info": [
+   {
+    "page_size": [
+     600,
+     800
+    ],
+    "preproc_blocks": [
+     {
+      "type": "text",
+      "bbox": [
+       45,
+       60,
+       555,
+       250
+      ],
+      "lines": [
+       {
+        "spans": [
+         {
+          "type": "text",
+          "content": "1 Introduction ........ 1\n1.1 Motivation ........ 3\n1.2 Contributions ........ 5\n2 Methods ........ 9\n2.1 Dataset ........ 11\n2.2 Evaluation ........ 14\n3 Results ........ 18"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "type": "code",
+      "guess_lang": "python",
+      "bbox": [
+       50,
+       300,
+       550,
+       430
+      ],
+      "lines": [
+       {
+        "spans": [
+         {
+          "type": "text",
+          "content": "def outer():"
+         }
+        ]
+       }
+      ],
+      "blocks": [
+       {
+        "type": "code_body",
+        "lines": [
+         {
+          "spans": [
+           {
+            "type": "text",
+            "content": "    if ready:"
+           }
+          ]
+         },
+         {
+          "spans": [
+           {
+            "type": "text",
+            "content": "        return value"
+           }
+          ]
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ },
+ "modelPages": [],
+ "assetMap": {},
+ "translations": null,
+ "formulaReplacements": null,
+ "expected": {
+  "documentID": "code-and-contents",
+  "sourceFingerprint": "f665241b6651074e",
+  "styles": {
+   "bodyText": {
+    "fontSize": 8.4,
+    "lineHeight": 1.22
+   },
+   "referenceText": {
+    "fontSize": 7.8,
+    "lineHeight": 1.12
+   }
+  },
+  "pages": [
+   {
+    "index": 1,
+    "width": 600,
+    "height": 800,
+    "blocks": [
+     {
+      "id": "p001_b0001",
+      "page": 1,
+      "type": "text",
+      "kind": "text",
+      "bbox": [
+       45,
+       60,
+       555,
+       250
+      ],
+      "text": "1 Introduction ........ 1\n1.1 Motivation ........ 3\n1.2 Contributions ........ 5\n2 Methods ........ 9\n2.1 Dataset ........ 11\n2.2 Evaluation ........ 14\n3 Results ........ 18",
+      "translatedText": "",
+      "formulas": [],
+      "formulaItems": [],
+      "imagePath": "",
+      "imageURL": "",
+      "lineCount": 1,
+      "fontSize": 18,
+      "translatable": true
+     },
+     {
+      "id": "p001_v0002",
+      "page": 1,
+      "type": "code",
+      "kind": "text",
+      "bbox": [
+       50,
+       300,
+       550,
+       430
+      ],
+      "text": "def outer():",
+      "translatedText": "",
+      "formulas": [],
+      "formulaItems": [],
+      "imagePath": "",
+      "imageURL": "",
+      "lineCount": 1,
+      "fontSize": 18,
+      "translatable": false
+     }
+    ],
+    "restoration": {
+     "streams": [
+      {
+       "side": "full",
+       "columnKey": "full",
+       "items": [
+        {
+         "id": "p001_b0001",
+         "kind": "text",
+         "type": "text",
+         "bbox": [
+          45,
+          60,
+          555,
+          250
+         ],
+         "html": "1 Introduction ........ 1<br />1.1 Motivation ........ 3<br />1.2 Contributions ........ 5<br />2 Methods ........ 9<br />2.1 Dataset ........ 11<br />2.2 Evaluation ........ 14<br />3 Results ........ 18",
+         "text": "1 Introduction ........ 1\n1.1 Motivation ........ 3\n1.2 Contributions ........ 5\n2 Methods ........ 9\n2.1 Dataset ........ 11\n2.2 Evaluation ........ 14\n3 Results ........ 18",
+         "translatedText": "",
+         "roleText": "1 Introduction ........ 1\n1.1 Motivation ........ 3\n1.2 Contributions ........ 5\n2 Methods ........ 9\n2.1 Dataset ........ 11\n2.2 Evaluation ........ 14\n3 Results ........ 18",
+         "originalLineCount": 7,
+         "debugLines": [],
+         "fontEstimate": 11,
+         "side": "full",
+         "indent": 0,
+         "pageIndex": 0,
+         "debugRole": "toc",
+         "tocRows": [
+          {
+           "number": "1",
+           "title": "Introduction",
+           "page": "1",
+           "level": 0
+          },
+          {
+           "number": "1.1",
+           "title": "Motivation",
+           "page": "3",
+           "level": 1
+          },
+          {
+           "number": "1.2",
+           "title": "Contributions",
+           "page": "5",
+           "level": 1
+          },
+          {
+           "number": "2",
+           "title": "Methods",
+           "page": "9",
+           "level": 0
+          },
+          {
+           "number": "2.1",
+           "title": "Dataset",
+           "page": "11",
+           "level": 1
+          },
+          {
+           "number": "2.2",
+           "title": "Evaluation",
+           "page": "14",
+           "level": 1
+          },
+          {
+           "number": "3",
+           "title": "Results",
+           "page": "18",
+           "level": 0
+          }
+         ],
+         "symbolGlossary": false,
+         "paragraphs": [],
+         "fromList": false,
+         "columnKey": "full"
+        }
+       ],
+       "bbox": [
+        45,
+        60,
+        555,
+        250
+       ],
+       "pageIndex": 0,
+       "debugRole": "toc",
+       "fontSize": 8.2,
+       "lineHeight": 1.22,
+       "paragraphGap": 0,
+       "styleKind": "toc",
+       "bodyInherited": false,
+       "refsOnly": false,
+       "equationDense": false
+      }
+     ],
+     "absoluteBlocks": [
+      {
+       "id": "p001_v0002",
+       "type": "code",
+       "kind": "code",
+       "bbox": [
+        50,
+        300,
+        550,
+        430
+       ],
+       "text": "def outer():\n    if ready:\n        return value",
+       "translatedText": "",
+       "sourceHTML": "def outer():",
+       "tableHTML": "",
+       "imagePath": "",
+       "imageURL": "",
+       "formulaItems": [],
+       "formulas": [],
+       "codeLanguage": "python",
+       "lineCount": 1,
+       "fontSize": 11,
+       "lineHeight": 1.12,
+       "debugLines": []
+      }
+     ],
+     "ocrBoxes": []
+    }
+   }
+  ]
+ }
+}

@@ -1,0 +1,414 @@
+{
+ "name": "equation-barrier",
+ "description": "testLayoutEquationBarrier payload: an interline equation separates two body blocks",
+ "layout": {
+  "pdf_info": [
+   {
+    "page_size": [
+     600,
+     800
+    ],
+    "preproc_blocks": [
+     {
+      "type": "text",
+      "bbox": [
+       50,
+       500,
+       270,
+       550
+      ],
+      "lines": [
+       {
+        "spans": [
+         {
+          "type": "text",
+          "content": "This paragraph contains enough ordinary academic prose to be promoted as body text and to exercise the restored-column merge logic. It deliberately has multiple sentences and sufficient length for the body classifier to accept it."
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "type": "interline_equation",
+      "bbox": [
+       50,
+       555,
+       270,
+       585
+      ],
+      "lines": [
+       {
+        "spans": [
+         {
+          "type": "text",
+          "content": "\\\\[a=b\\\\]"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "type": "text",
+      "bbox": [
+       50,
+       590,
+       270,
+       645
+      ],
+      "lines": [
+       {
+        "spans": [
+         {
+          "type": "text",
+          "content": "Following paragraph is separate prose, not a continuation. This paragraph contains enough ordinary academic prose to be promoted as body text and to exercise the restored-column merge logic. It deliberately has multiple sentences and sufficient length for the body classifier to accept it."
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ },
+ "modelPages": [],
+ "assetMap": {},
+ "translations": null,
+ "formulaReplacements": null,
+ "expected": {
+  "documentID": "equation-barrier",
+  "sourceFingerprint": "8891295cbe5292d8",
+  "styles": {
+   "bodyText": {
+    "fontSize": 8.26,
+    "lineHeight": 1.28
+   },
+   "referenceText": {
+    "fontSize": 7.8,
+    "lineHeight": 1.12
+   }
+  },
+  "pages": [
+   {
+    "index": 1,
+    "width": 600,
+    "height": 800,
+    "blocks": [
+     {
+      "id": "p001_b0001",
+      "page": 1,
+      "type": "text",
+      "kind": "text",
+      "bbox": [
+       50,
+       500,
+       270,
+       550
+      ],
+      "text": "This paragraph contains enough ordinary academic prose to be promoted as body text and to exercise the restored-column merge logic. It deliberately has multiple sentences and sufficient length for the body classifier to accept it.",
+      "translatedText": "",
+      "formulas": [],
+      "formulaItems": [],
+      "imagePath": "",
+      "imageURL": "",
+      "lineCount": 1,
+      "fontSize": 8.049844718999243,
+      "translatable": true
+     },
+     {
+      "id": "p001_v0002",
+      "page": 1,
+      "type": "interline_equation",
+      "kind": "formula",
+      "bbox": [
+       50,
+       555,
+       270,
+       585
+      ],
+      "text": "\\\\[a=b\\\\]",
+      "translatedText": "",
+      "formulas": [
+       "\\\\[a=b\\\\]"
+      ],
+      "formulaItems": [
+       {
+        "id": "p001_f0001",
+        "page": 1,
+        "type": "interline_equation",
+        "tex": "\\\\[a=b\\\\]"
+       }
+      ],
+      "imagePath": "",
+      "imageURL": "",
+      "lineCount": 1,
+      "fontSize": 18,
+      "translatable": false
+     },
+     {
+      "id": "p001_b0002",
+      "page": 1,
+      "type": "text",
+      "kind": "text",
+      "bbox": [
+       50,
+       590,
+       270,
+       645
+      ],
+      "text": "Following paragraph is separate prose, not a continuation. This paragraph contains enough ordinary academic prose to be promoted as body text and to exercise the restored-column merge logic. It deliberately has multiple sentences and sufficient length for the body classifier to accept it.",
+      "translatedText": "",
+      "formulas": [],
+      "formulaItems": [],
+      "imagePath": "",
+      "imageURL": "",
+      "lineCount": 1,
+      "fontSize": 7.483696565582699,
+      "translatable": true
+     }
+    ],
+    "restoration": {
+     "streams": [
+      {
+       "side": "left",
+       "columnKey": "column-0",
+       "items": [
+        {
+         "kind": "text",
+         "side": "left",
+         "columnKey": "column-0",
+         "bbox": [
+          50,
+          500,
+          270,
+          550
+         ],
+         "text": "This paragraph contains enough ordinary academic prose to be promoted as body text and to exercise the restored-column merge logic. It deliberately has multiple sentences and sufficient length for the body classifier to accept it.",
+         "roleText": "This paragraph contains enough ordinary academic prose to be promoted as body text and to exercise the restored-column merge logic. It deliberately has multiple sentences and sufficient length for the body classifier to accept it.",
+         "originalLineCount": 1,
+         "pageIndex": 0,
+         "debugRole": "merged_body",
+         "parts": [
+          {
+           "id": "p001_b0001",
+           "kind": "text",
+           "type": "text",
+           "bbox": [
+            50,
+            500,
+            270,
+            550
+           ],
+           "html": "This paragraph contains enough ordinary academic prose to be promoted as body text and to exercise the restored-column merge logic. It deliberately has multiple sentences and sufficient length for the body classifier to accept it.",
+           "text": "This paragraph contains enough ordinary academic prose to be promoted as body text and to exercise the restored-column merge logic. It deliberately has multiple sentences and sufficient length for the body classifier to accept it.",
+           "translatedText": "",
+           "roleText": "This paragraph contains enough ordinary academic prose to be promoted as body text and to exercise the restored-column merge logic. It deliberately has multiple sentences and sufficient length for the body classifier to accept it.",
+           "originalLineCount": 1,
+           "debugLines": [],
+           "fontEstimate": 8.2559001809637,
+           "side": "left",
+           "indent": 0,
+           "pageIndex": 0,
+           "debugRole": "body_candidate",
+           "tocRows": null,
+           "symbolGlossary": false,
+           "paragraphs": [],
+           "fromList": false,
+           "columnKey": "column-0"
+          }
+         ],
+         "paragraphs": [
+          {
+           "parts": [
+            {
+             "id": "p001_b0001",
+             "kind": "text",
+             "type": "text",
+             "bbox": [
+              50,
+              500,
+              270,
+              550
+             ],
+             "html": "This paragraph contains enough ordinary academic prose to be promoted as body text and to exercise the restored-column merge logic. It deliberately has multiple sentences and sufficient length for the body classifier to accept it.",
+             "text": "This paragraph contains enough ordinary academic prose to be promoted as body text and to exercise the restored-column merge logic. It deliberately has multiple sentences and sufficient length for the body classifier to accept it.",
+             "translatedText": "",
+             "roleText": "This paragraph contains enough ordinary academic prose to be promoted as body text and to exercise the restored-column merge logic. It deliberately has multiple sentences and sufficient length for the body classifier to accept it.",
+             "originalLineCount": 1,
+             "debugLines": [],
+             "fontEstimate": 8.2559001809637,
+             "side": "left",
+             "indent": 0,
+             "pageIndex": 0,
+             "debugRole": "body_candidate",
+             "tocRows": null,
+             "symbolGlossary": false,
+             "paragraphs": [],
+             "fromList": false,
+             "columnKey": "column-0"
+            }
+           ],
+           "indent": 0
+          }
+         ],
+         "debugLines": []
+        }
+       ],
+       "bbox": [
+        50,
+        500,
+        270,
+        550
+       ],
+       "pageIndex": 0,
+       "debugRole": "merged_body",
+       "fontSize": 8.26,
+       "lineHeight": 1.28,
+       "paragraphGap": 0.16,
+       "styleKind": "body_text",
+       "bodyInherited": false,
+       "refsOnly": false,
+       "equationDense": false
+      },
+      {
+       "side": "left",
+       "columnKey": "column-0",
+       "items": [
+        {
+         "kind": "text",
+         "side": "left",
+         "columnKey": "column-0",
+         "bbox": [
+          50,
+          590,
+          270,
+          645
+         ],
+         "text": "Following paragraph is separate prose, not a continuation. This paragraph contains enough ordinary academic prose to be promoted as body text and to exercise the restored-column merge logic. It deliberately has multiple sentences and sufficient length for the body classifier to accept it.",
+         "roleText": "Following paragraph is separate prose, not a continuation. This paragraph contains enough ordinary academic prose to be promoted as body text and to exercise the restored-column merge logic. It deliberately has multiple sentences and sufficient length for the body classifier to accept it.",
+         "originalLineCount": 1,
+         "pageIndex": 0,
+         "debugRole": "merged_body",
+         "parts": [
+          {
+           "id": "p001_b0002",
+           "kind": "text",
+           "type": "text",
+           "bbox": [
+            50,
+            590,
+            270,
+            645
+           ],
+           "html": "Following paragraph is separate prose, not a continuation. This paragraph contains enough ordinary academic prose to be promoted as body text and to exercise the restored-column merge logic. It deliberately has multiple sentences and sufficient length for the body classifier to accept it.",
+           "text": "Following paragraph is separate prose, not a continuation. This paragraph contains enough ordinary academic prose to be promoted as body text and to exercise the restored-column merge logic. It deliberately has multiple sentences and sufficient length for the body classifier to accept it.",
+           "translatedText": "",
+           "roleText": "Following paragraph is separate prose, not a continuation. This paragraph contains enough ordinary academic prose to be promoted as body text and to exercise the restored-column merge logic. It deliberately has multiple sentences and sufficient length for the body classifier to accept it.",
+           "originalLineCount": 1,
+           "debugLines": [],
+           "fontEstimate": 7.724595959893938,
+           "side": "left",
+           "indent": 0,
+           "pageIndex": 0,
+           "debugRole": "body_candidate",
+           "tocRows": null,
+           "symbolGlossary": false,
+           "paragraphs": [],
+           "fromList": false,
+           "columnKey": "column-0"
+          }
+         ],
+         "paragraphs": [
+          {
+           "parts": [
+            {
+             "id": "p001_b0002",
+             "kind": "text",
+             "type": "text",
+             "bbox": [
+              50,
+              590,
+              270,
+              645
+             ],
+             "html": "Following paragraph is separate prose, not a continuation. This paragraph contains enough ordinary academic prose to be promoted as body text and to exercise the restored-column merge logic. It deliberately has multiple sentences and sufficient length for the body classifier to accept it.",
+             "text": "Following paragraph is separate prose, not a continuation. This paragraph contains enough ordinary academic prose to be promoted as body text and to exercise the restored-column merge logic. It deliberately has multiple sentences and sufficient length for the body classifier to accept it.",
+             "translatedText": "",
+             "roleText": "Following paragraph is separate prose, not a continuation. This paragraph contains enough ordinary academic prose to be promoted as body text and to exercise the restored-column merge logic. It deliberately has multiple sentences and sufficient length for the body classifier to accept it.",
+             "originalLineCount": 1,
+             "debugLines": [],
+             "fontEstimate": 7.724595959893938,
+             "side": "left",
+             "indent": 0,
+             "pageIndex": 0,
+             "debugRole": "body_candidate",
+             "tocRows": null,
+             "symbolGlossary": false,
+             "paragraphs": [],
+             "fromList": false,
+             "columnKey": "column-0"
+            }
+           ],
+           "indent": 0
+          }
+         ],
+         "debugLines": []
+        }
+       ],
+       "bbox": [
+        50,
+        590,
+        270,
+        645
+       ],
+       "pageIndex": 0,
+       "debugRole": "merged_body",
+       "fontSize": 8.26,
+       "lineHeight": 1.28,
+       "paragraphGap": 0.16,
+       "styleKind": "body_text",
+       "bodyInherited": false,
+       "refsOnly": false,
+       "equationDense": false
+      }
+     ],
+     "absoluteBlocks": [
+      {
+       "id": "p001_v0002",
+       "type": "interline_equation",
+       "kind": "formula",
+       "bbox": [
+        50,
+        555,
+        270,
+        585
+       ],
+       "text": "\\\\[a=b\\\\]",
+       "translatedText": "",
+       "sourceHTML": "\\\\[a=b\\\\]",
+       "tableHTML": "",
+       "imagePath": "",
+       "imageURL": "",
+       "formulaItems": [
+        {
+         "id": "p001_f0001",
+         "page": 1,
+         "type": "interline_equation",
+         "tex": "\\\\[a=b\\\\]"
+        }
+       ],
+       "formulas": [
+        "\\\\[a=b\\\\]"
+       ],
+       "codeLanguage": "",
+       "lineCount": 1,
+       "fontSize": 11,
+       "lineHeight": 1.12,
+       "debugLines": []
+      }
+     ],
+     "ocrBoxes": []
+    }
+   }
+  ]
+ }
+}
