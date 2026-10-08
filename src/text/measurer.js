@@ -110,8 +110,13 @@
       const lineHeight = Number.isFinite(Number(layoutOptions.lineHeight)) ? Number(layoutOptions.lineHeight) : 1;
       const align = layoutOptions.align || "justify";
       const { indent, hang } = resolveIndents(layoutOptions, fontSize);
-      // Opt-in balanced breaking for justified text (see Linebreak.layout).
-      const core = Linebreak.layout(prepared, fontSize, width, layoutOptions.balance ? { indent, hang, balance: layoutOptions.balance } : { indent, hang });
+      // Breaking: greedy first-fit (Typst "simple", the default here),
+      // linebreaks: "optimized" (Typst's default Knuth–Plass, which may shrink
+      // a justified line's spaces), or opt-in balanced greedy (see Linebreak.layout).
+      const breakOptions = { indent, hang };
+      if (layoutOptions.linebreaks === "optimized") Object.assign(breakOptions, { optimized: true, justify: align === "justify" });
+      else if (layoutOptions.balance) breakOptions.balance = layoutOptions.balance;
+      const core = Linebreak.layout(prepared, fontSize, width, breakOptions);
       const leading = Math.max(0, (lineHeight - 1) * fontSize);
       const lines = [];
       let y = 0;
@@ -142,8 +147,10 @@
           glyphBottom: baseline + line.bottom,
           justified,
           // Optional extras: room on this line, and whether it ends in a
-          // forced break (content "break" run or paragraph end).
+          // forced break (content "break" run or paragraph end). A line wider
+          // than its room (optimized breaking only) is drawn shrunk to it.
           available,
+          shrunk: contentWidth > available + 1e-4,
           forced: line.mandatory
         });
         maxLineWidth = Math.max(maxLineWidth, x + (justified ? available : contentWidth));

@@ -436,13 +436,25 @@
     return -1;
   }
 
+  // endsInCjk(p)[e]: the character ending at e is closing CJK punctuation or
+  // a CJ glyph (computed once per paragraph; breaking asks for every line).
+  function endsInCjk(p) {
+    if (p.endsInCjk) return p.endsInCjk;
+    const out = new Uint8Array(p.n + 1);
+    for (let e = 1; e <= p.n; e++) {
+      const low = e >= 2 && /[\uDC00-\uDFFF]/.test(p.text[e - 1]);
+      const lastChar = String.fromCodePoint(p.text.codePointAt(e - 1 - (low ? 1 : 0)));
+      out[e] = END_PUNCT.has(lastChar) || CJ_SCRIPT.test(lastChar) ? 1 : 0;
+    }
+    return (p.endsInCjk = out);
+  }
+
   // adjust_cj_at_line_end: closing CJK punctuation at the (trimmed) line end
   // loses its blank half; trailing CJK–Latin spacing is removed. Typst tests
   // the line text after trailing whitespace is trimmed.
   function lineEndAdjustEm(p, start, e) {
     if (e <= start) return 0;
-    const lastChar = String.fromCodePoint(p.text.codePointAt(e - 1 - (e >= 2 && /[\uDC00-\uDFFF]/.test(p.text[e - 1]) ? 1 : 0)));
-    if (!END_PUNCT.has(lastChar) && !CJ_SCRIPT.test(lastChar)) return 0;
+    if (!endsInCjk(p)[e]) return 0;
     const g = lastGlyph(p, start, e);
     if (g < 0) return 0;
     if (p.punct[g] === 1) return p.shrinkR[g];
@@ -480,6 +492,149 @@
       if (isSpace(c) || CJK_JUSTIFIABLE.test(c)) gaps += 1;
     }
     return gaps;
+  }
+
+  // How much a line may stretch and shrink when justified, and how many of its
+  // glyphs may take extra space (Typst ShapedGlyph::base_adjustability with
+  // the default justification limits — spaces 2/3 .. 150% of their width,
+  // tracking 0 — plus CJK punctuation halves/quarters, the shrinkable half of
+  // CJK–Latin spacing, and the line-start/-end adjustments of line.rs).
+  // In em. lead: the paragraph starts with an indent (no line-start trim).
+  function glyphAdjustability(p, i) {
+    const c = p.text[i];
+    if (c === OBJECT || c === LINE_SEPARATOR) return [0, 0, 0];
+    if (isSpace(c)) return [p.adv[i] * 0.5, Math.min(p.adv[i] / 3, p.adv[i] * 0.75), 1];
+    const shrink = leftShrink(p, i) + p.shrinkR[i] + (p.spaceR[i] > 0 ? 0.125 : 0);
+    const justifiable = p.cj[i] || p.punct[i] > 0
+      // A Latin letter or digit followed by a CJ glyph (CJK–Latin spacing).
+      || (i + 1 < p.n && p.spaceL[i + 1] > 0 && LETTER_OR_NUMBER.test(c));
+    return [0, shrink, justifiable ? 1 : 0];
+  }
+  const leftShrink = (p, i) => p.shrinkL[i] + (p.spaceL[i] > 0 ? 0.125 : 0);
+
+  // Prefix sums of glyphAdjustability, built on first use.
+  function adjustabilitySums(p) {
+    if (p.adjustSums) return p.adjustSums;
+    const stretch = new Float64Array(p.n + 1);
+    const shrink = new Float64Array(p.n + 1);
+    const justifiables = new Int32Array(p.n + 1);
+    for (let i = 0; i < p.n; i++) {
+      const [a, b, c] = p.glyph[i] ? glyphAdjustability(p, i) : [0, 0, 0];
+      stretch[i + 1] = stretch[i] + a;
+      shrink[i + 1] = shrink[i] + b;
+      justifiables[i + 1] = justifiables[i] + c;
+    }
+    return (p.adjustSums = { stretch, shrink, justifiables });
+  }
+
+  function lineAdjustability(p, start, end, mandatory, lead) {
+    const e = trimmedEnd(p, start, end, mandatory);
+    if (e <= start) return { stretch: 0, shrink: 0, justifiables: 0 };
+    const sums = adjustabilitySums(p);
+    const stretch = sums.stretch[e] - sums.stretch[start];
+    let shrink = sums.shrink[e] - sums.shrink[start];
+    let justifiables = sums.justifiables[e] - sums.justifiables[start];
+    // adjust_cj_at_line_start: a right-aligned punctuation mark is shrunk
+    // already; a CJ glyph's leading CJK–Latin spacing is removed.
+    if (p.glyph[start] && !(lead && start === 0) && !isSpace(p.text[start])
+      && (p.punct[start] === 2 || (p.cj[start] && p.spaceL[start] > 0))) shrink -= leftShrink(p, start);
+    // adjust_cj_at_line_end: the closing punctuation's blank half or the
+    // trailing CJK–Latin spacing is gone, and with it its shrinkability.
+    const g = lastGlyph(p, start, e);
+    if (g >= 0) {
+      if (lineEndAdjustEm(p, start, e) > 0) {
+        if (p.punct[g] === 1) shrink -= p.shrinkR[g];
+        else if (p.cj[g] && p.spaceR[g] > 0) shrink -= 0.125;
+      }
+      // A CJ glyph or CJK punctuation at the line end takes no extra space.
+      if (p.cj[g] || p.punct[g] > 0) justifiables -= 1;
+    }
+    return { stretch: Math.max(0, stretch), shrink: Math.max(0, shrink), justifiables: Math.max(0, justifiables) };
+  }
+
+  // Typst's optimized (Knuth–Plass) breaking (linebreak.rs
+  // linebreak_optimized_bounded): for every breakpoint, the predecessor
+  // minimising the total cost (1 + 100|ratio|^3 + penalties)^2, where ratio is
+  // the stretch or shrink a line needs relative to its adjustability. Ties go
+  // to the later start, as in Typst (`best.total >= total`).
+  //
+  // Pruning, as in Typst: `bound` is the exact cost of a known layout (Typst
+  // gets one from an approximate pass; here the greedy layout serves), so no
+  // optimal prefix costs more. Once a line from some start is underfull, lines
+  // from later starts are shorter and cost at least as much, so starts whose
+  // total plus that cost exceed the bound are skipped without measuring.
+  const MIN_RATIO = -1;
+  const RUNT_COST = 100;
+  const BOUND_EPS = 1e-3;
+  function lineCost(p, lineWidth, available, size, justify, lead, start, end, mandatory, unbreakable) {
+    const first = start === 0;
+    const width = lineWidth(start, end, first, mandatory);
+    let delta = available(first) - width;
+    if (Math.abs(delta) < 1e-9) delta = 0;
+    const adj = lineAdjustability(p, start, end, mandatory, lead);
+    const adjustability = (delta >= 0 ? adj.stretch : adj.shrink) * size;
+    let ratio = adjustability > 0 ? delta / adjustability : (delta === 0 ? 0 : (delta > 0 ? Infinity : -Infinity));
+    if (ratio > 1) {
+      const extra = (delta - adjustability) / Math.max(1, adj.justifiables);
+      ratio = 1 + extra / (size / 2);
+    }
+    ratio = Math.min(10, Math.max(MIN_RATIO - 1, ratio));
+    const minRatio = justify ? MIN_RATIO : 0;
+    let badness;
+    if (ratio < minRatio) badness = 1e6;
+    // Every line but a paragraph's last pays for its ratio; the last line
+    // only when it has to shrink.
+    else if (!mandatory || ratio < 0) badness = 100 * Math.abs(ratio) ** 3;
+    else badness = 0;
+    const penalty = unbreakable && mandatory ? RUNT_COST : 0;
+    return { width, ratio, overfull: ratio < minRatio, cost: (1 + badness + penalty) ** 2 };
+  }
+
+  function optimizedBreaks(p, breaks, lineWidth, available, size, justify, lead, greedy) {
+    const cost = (start, end, mandatory, unbreakable) => lineCost(p, lineWidth, available, size, justify, lead, start, end, mandatory, unbreakable);
+    // Upper bound: the greedy layout's exact cost. A greedy line is
+    // unbreakable when no breakpoint lies strictly inside it.
+    let bound = 0; if (globalThis.KPDEBUG) globalThis.KPDEBUG.length = 0;
+    let k = 0;
+    for (const line of greedy) {
+      while (k < breaks.length && breaks[k].position <= line.start) k += 1;
+      const unbreakable = !(k < breaks.length && breaks[k].position < line.end);
+      bound += cost(line.start, line.end, line.mandatory, unbreakable).cost;
+    }
+    if (globalThis.KPDEBUG) globalThis.KPBOUND = bound;
+    const table = [{ pred: 0, total: 0, end: 0, mandatory: false, width: 0 }];
+    let active = 0;
+    let prevEnd = 0;
+    for (const bk of breaks) {
+      let best = null;
+      let lower = null;
+      for (let index = active; index < table.length; index++) {
+        const pred = table[index];
+        if (lower !== null && pred.total + lower > bound + BOUND_EPS) continue;
+        const line = cost(pred.end, bk.position, bk.mandatory, prevEnd === pred.end);
+        if (globalThis.KPDEBUG) globalThis.KPDEBUG.push({ start: pred.end, end: bk.position, total: pred.total + line.cost, predTotal: pred.total, ...line });
+        if (line.overfull && active === index) active += 1;
+        const total = pred.total + line.cost;
+        // Formula boxes never have negative width here, so an underfull
+        // line bounds every shorter one from below.
+        if (line.ratio > 0 && lower === null) lower = line.cost;
+        if (total > bound + BOUND_EPS) continue;
+        if (!best || best.total >= total) best = { pred: index, total, end: bk.position, mandatory: bk.mandatory, width: line.width };
+      }
+      if (bk.mandatory) active = table.length;
+      if (best) table.push(best);
+      prevEnd = bk.position;
+    }
+    const lines = [];
+    let index = table.length - 1;
+    // Only a faulty bound leaves the table short of the paragraph end.
+    if (table[index].end !== p.n && breaks.length && table[index].end !== breaks[breaks.length - 1].position) throw new Error("optimized line breaking: incomplete layout");
+    while (index > 0) {
+      const entry = table[index];
+      lines.unshift({ start: table[entry.pred].end, end: entry.end, width: entry.width, mandatory: entry.mandatory });
+      index = entry.pred;
+    }
+    return lines;
   }
 
   // Opt-in balanced breaking (options.balance = { trigger, maxStretch }).
@@ -562,7 +717,7 @@
     const hang = Number(options.hang) || 0;
     const lead = indent > 0 || hang > 0;
     const breaks = breaksFor(p, lead);
-    const lines = [];
+    let lines = [];
     const lineWidth = (start, end, first, mandatory) => lineWidthEm(p, start, end, mandatory, lead) * size + (first ? indent : 0);
     const available = first => first ? width : width - hang;
     let start = 0;
@@ -584,7 +739,10 @@
       else last = { end: bk.position, width: current };
     }
     if (last) lines.push({ start, end: last.end, width: last.width, mandatory: false });
-    if (options.balance) balanceLines(p, lines, breaks, lineWidth, available, size, options.balance);
+    // options.optimized: Typst `linebreaks: "optimized"` (justify:
+    // options.justify), bounded by the greedy layout just computed.
+    if (options.optimized) lines = optimizedBreaks(p, breaks, lineWidth, available, size, options.justify !== false, lead, lines);
+    else if (options.balance) balanceLines(p, lines, breaks, lineWidth, available, size, options.balance);
 
     let height = 0;
     for (const line of lines) {
@@ -623,6 +781,6 @@
 
   return {
     prepare, layout, naturalWidth, lineWidthEm, lineEndAdjustEm, breakOpportunities, uax14Breaks,
-    isSpace, OBJECT, LINE_SEPARATOR
+    justifiableGaps, isSpace, OBJECT, LINE_SEPARATOR
   };
 });

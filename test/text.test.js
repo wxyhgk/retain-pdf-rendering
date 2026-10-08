@@ -16,8 +16,8 @@ const em = (text, mode) => Array.from(metrics.shape(text, undefined, mode)).redu
 const lineText = (prepared, line) => prepared.text.slice(line.start, line.end);
 const box = (widthEm, heightEm = 0.9, depthEm = 0.2) => ({ widthEm, heightEm, depthEm });
 
-test("Typst parity: committed line breaks from Typst (1196 probes)", () => {
-  const fixture = JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures", "text-parity", "typst-lines.json"), "utf8"));
+function parityMismatches(file) {
+  const fixture = JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures", "text-parity", file), "utf8"));
   let probes = 0;
   const mismatches = [];
   for (const paragraph of fixture.paragraphs) {
@@ -37,7 +37,39 @@ test("Typst parity: committed line breaks from Typst (1196 probes)", () => {
     }
   }
   assert.equal(probes, fixture.summary.probes);
+  return { probes, mismatches };
+}
+
+test("Typst parity: committed line breaks from Typst (1196 probes)", () => {
+  const { probes, mismatches } = parityMismatches("typst-lines.json");
   assert.deepEqual(mismatches.slice(0, 5), [], `${mismatches.length} of ${probes} probes break differently from Typst`);
+});
+
+test("Typst parity: optimized (Knuth–Plass) breaking, committed from Typst (1196 probes)", () => {
+  const { probes, mismatches } = parityMismatches("typst-lines-optimized.json");
+  // One exact tie: two layouts of this paragraph have the same total cost
+  // (103489.75 both ways, differing in the last float bits), and which one
+  // wins depends on summation order. Same line count, breaks swapped by one
+  // character on lines 5-8.
+  const ties = new Set(["stress|translation|stress#59|0@11.5"]);
+  const real = mismatches.filter(m => !ties.has(`${m.id}@${m.size}`));
+  assert.deepEqual(real.slice(0, 5), [], `${real.length} of ${probes} probes break differently from Typst`);
+  for (const m of mismatches) assert.equal(m.ours.length, m.expected.length, `${m.id}: a tie never changes the line count`);
+});
+
+test("characters Source Han Serif lacks are measured as Typst sets them (fallback font, decomposition)", () => {
+  // Widths Typst 0.15.1 measured (font units at 1000/em, --ignore-system-fonts).
+  const typst = {
+    "ğ": 500, "Ağaoğlu": 3848, "Serdaroğlu": 5257,     // ğ from the fallback font
+    "Ελληνικά": 4425, "İsmail": 3075, "Dvořák": 3521, // base + mark: kerns before, not after
+    "T\\u01de": 1307,                                 // Ǟ -> Ä + macron, kerns as Ä
+    "A\\u037ev": 1593, "\\u212aa": 1280              // singleton equivalents of ; and K
+  };
+  for (const [text, units] of Object.entries(typst)) {
+    const string = JSON.parse(`"${text}"`);
+    const ours = Array.from(metrics.shape(string)).reduce((sum, value) => sum + value, 0) * 1000;
+    assert.ok(Math.abs(ours - units) < 0.5, `${string}: ours ${ours.toFixed(1)}, Typst ${units}`);
+  }
 });
 
 test("UAX #14 port reproduces the linebreak package", t => {

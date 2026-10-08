@@ -44,7 +44,7 @@
   }
 
   class FontMetrics {
-    constructor({ unitsPerEm, ascender, descender, capHeight, xHeight, defaultAdvance, modes, font = "" }) {
+    constructor({ unitsPerEm, ascender, descender, capHeight, xHeight, defaultAdvance, modes, font = "", kernAs = new Map(), aliases = new Map() }) {
       this.font = font;
       this.unitsPerEm = unitsPerEm;
       this.ascender = ascender / unitsPerEm;
@@ -53,6 +53,10 @@
       this.xHeight = Number.isFinite(xHeight) ? xHeight / unitsPerEm : this.ascender / 2;
       this.defaultAdvance = defaultAdvance;
       this.modes = modes;
+      // Letters the font draws as base + combining mark, and characters drawn
+      // as a canonically equivalent one (see shape()).
+      this.kernAs = kernAs;
+      this.aliases = aliases;
     }
 
     // harfbuzz guess_segment_properties: the first character with a concrete
@@ -84,6 +88,12 @@
     shape(text, out = new Float64Array(text.length), mode = FontMetrics.modeOf(text), kernOut = null) {
       const unit = this.unitsPerEm;
       const applyPair = (left, leftIndex, right) => {
+        // A letter drawn as base + mark kerns with the glyph before it (as
+        // its base); the mark after the base blocks kerning with the next.
+        left = this.aliases.get(left) ?? left;
+        right = this.aliases.get(right) ?? right;
+        if (this.kernAs.has(left)) return;
+        right = this.kernAs.get(right) ?? right;
         if (left >= PAIR_LIMIT || right >= PAIR_LIMIT) return;
         const pair = this.pair(left, right, mode);
         if (pair && pair.kern) {
@@ -139,6 +149,11 @@
     }
     const base = new Map();
     for (const [first, count, advance] of table.ranges) for (let i = 0; i < count; i++) base.set(first + i, advance);
+    // Characters the font lacks, as Typst sets them with its fallback font
+    // (scripts/build-fallback-table.js); anything else keeps defaultAdvance.
+    for (const [first, count, advance] of (table.fallback && table.fallback.ranges) || []) {
+      for (let i = 0; i < count; i++) if (!base.has(first + i)) base.set(first + i, advance);
+    }
     const modes = { zh: emptyMode(), dflt: emptyMode() };
     for (const name of ["zh", "dflt"]) {
       const mode = modes[name];
@@ -161,7 +176,9 @@
       capHeight: table.capHeight,
       xHeight: table.xHeight,
       defaultAdvance: table.defaultAdvance,
-      modes
+      modes,
+      kernAs: new Map((table.fallback && table.fallback.decompose) || []),
+      aliases: new Map((table.fallback && table.fallback.alias) || [])
     });
   }
 

@@ -76,7 +76,11 @@ for i, page in enumerate(doc):
                         "fill": list(fill) if fill is not None else None, "stroke": list(color) if color is not None else None,
                         "clip": [clip.x0, clip.y0, clip.x1, clip.y1] if clip is not None else None,
                         "fillOpacity": d.get("fill_opacity"), "polylines": [[[round(x, 2), round(y, 2)] for x, y in seg] for seg in segs]})
-    out[str(i)] = {"width": page.rect.width, "height": page.rect.height, "drawings": entries}
+    # Raster images and words, for the ink extent of OCR obstacles
+    # (obstacleInkBoxes): an OCR figure box often reaches far past its ink.
+    images = [[b[0], b[1], b[2], b[3]] for b in (info["bbox"] for info in page.get_image_info())]
+    words = [[round(w[0], 2), round(w[1], 2), round(w[2], 2), round(w[3], 2)] for w in page.get_text("words")]
+    out[str(i)] = {"width": page.rect.width, "height": page.rect.height, "drawings": entries, "images": images, "words": words}
 print(json.dumps(out))
 `;
 
@@ -250,6 +254,48 @@ function vectorObstacles(page, textBoxes, obstacleBoxes) {
 // is still inside its own source box (cannot be avoided by the fitter: the
 // vector crosses the box itself, which the clip above rules out) or has
 // overflowed.
+// The ink extent of each OCR obstacle (figure, table, formula, untranslated
+// text kept from the source): the union, clipped to the OCR box, of the
+// visible drawings, raster images and words inside it. Words inside a
+// repainted text box belong to that text, not to the obstacle; page-sized
+// images and fills are backgrounds. OCR boxes are only ever tightened; a box
+// with no ink found inside keeps its OCR extent. -> [{ bbox, tightened }].
+function obstacleInkBoxes(page, obstacleBoxes, textBoxes) {
+  const pageArea = page.width * page.height;
+  const ink = [];
+  for (const d of page.drawings || []) {
+    let rect = widen(d.rect.slice(), Number(d.width) || 0);
+    if (d.clip) rect = clipRect(rect, d.clip);
+    if (!rect || area(rect) > BACKGROUND_PAGE_AREA * pageArea) continue;
+    const stroked = Array.isArray(d.stroke) && d.stroke.length && !invisible(d.stroke, 1) && (d.type || "").includes("s");
+    const filled = Array.isArray(d.fill) && d.fill.length && !invisible(d.fill, d.fillOpacity);
+    if (stroked || filled) ink.push(rect);
+  }
+  for (const image of page.images || []) {
+    if (area(image) > BACKGROUND_PAGE_AREA * pageArea) continue;
+    ink.push(image);
+  }
+  const center = r => [(r[0] + r[2]) / 2, (r[1] + r[3]) / 2];
+  const inBox = (point, box) => point[0] >= box[0] && point[0] <= box[2] && point[1] >= box[1] && point[1] <= box[3];
+  for (const word of page.words || []) {
+    const c = center(word);
+    if (textBoxes.some(box => inBox(c, box))) continue;
+    ink.push(word);
+  }
+  return obstacleBoxes.map(box => {
+    let union = null;
+    for (const rect of ink) {
+      const part = clipRect(rect, box);
+      if (!part) continue;
+      union = union ? [Math.min(union[0], part[0]), Math.min(union[1], part[1]), Math.max(union[2], part[2]), Math.max(union[3], part[3])] : part;
+    }
+    if (!union) return { bbox: box.slice(), tightened: false };
+    const pad = MIN_EDGE;
+    const bbox = [Math.max(box[0], union[0] - pad), Math.max(box[1], union[1] - pad), Math.min(box[2], union[2] + pad), Math.min(box[3], union[3] + pad)];
+    return { bbox, tightened: area(bbox) < area(box) - 1e-6 };
+  });
+}
+
 function vectorHits(fitted, vectorsByPage, paint) {
   const hits = [];
   for (const page of fitted.pages) {
@@ -270,4 +316,4 @@ function vectorHits(fitted, vectorsByPage, paint) {
   return hits;
 }
 
-module.exports = { extractDrawings, vectorObstacles, vectorHits, subtract };
+module.exports = { extractDrawings, vectorObstacles, vectorHits, subtract, obstacleInkBoxes };

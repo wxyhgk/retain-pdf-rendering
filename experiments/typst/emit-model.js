@@ -62,8 +62,11 @@ function emitLine(node, line, flat, maths) {
   const forced = flat.text[end - 1] === LINE_SEPARATOR || end === flat.text.length;
   if (!forced) while (end > line.start && isSpace(flat.text[end - 1])) end -= 1;
   const body = lineBody(flat, line.start, end, maths, size);
+  // A line wider than its room (optimized breaking) is shrunk by Typst's own
+  // justification, which "simple" breaking never does: it would break it.
+  const shrink = Number(line.naturalWidth) > Number(line.width) + 1e-4;
   const content = line.justified
-    ? `block(width: ${fmt(line.width)}pt, { set par(justify: true, linebreaks: "simple"); [#${body}#linebreak(justify: true)] })`
+    ? `block(width: ${fmt(line.width)}pt, { set par(justify: true, linebreaks: "${shrink ? "optimized" : "simple"}"); [#${body}#linebreak(justify: true)] })`
     : `box(${body})`;
   // With top-edge "baseline" text adds nothing above the baseline, but an
   // inline formula box still does: the placed frame's top is the tallest

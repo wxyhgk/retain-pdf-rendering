@@ -84,6 +84,29 @@ Parity (`compare-typst.js`, sizes 7 / 8.5 / 10 / 11.5 pt):
 | 400 new stress paragraphs, seed 424242 (never used while tuning) | 2156 | 2156 (100 %) |
 | same, metrics from the compact table instead of the font | 1196 / 2156 / 2156 | 100 % |
 
+`--linebreaks optimized` (Typst's default Knuth–Plass breaking, which may
+shrink a line's spaces and CJK punctuation; `linebreaks: "optimized"` in
+`Text.layout`, the default of `src/typeset`):
+
+| Set | Probes | Same line breaks | Same line count |
+|---|---|---|---|
+| fixtures + demo math + 160 stress paragraphs | 1196 | 1195 | 100 % |
+| 400 new stress paragraphs, seeds 7 / 99991 / 424242 | 3 × 2156 | 2152 / 2151 / 2153 | 100 % |
+
+Every remaining difference is an exact cost tie (two layouts whose totals are
+equal up to the last float bits; which wins depends on summation order) or a
+line too wide for the probe page, whose overhanging characters PyMuPDF does
+not extract. `test/fixtures/text-parity/typst-lines-optimized.json` commits
+the first set for the Typst-free test.
+
+Characters Source Han Serif lacks (most of Latin Extended-A, much of Greek and
+the math operators) are set by Typst with a fallback font or as base + mark.
+`scripts/build-fallback-table.js` has Typst measure them into the tables;
+every one of them in `A·v`, `T·` and `·o` contexts then matches Typst exactly
+(12 417 strings regular, 12 426 bold). Before, they counted as 1 em, and
+paragraphs of Turkish / Polish / Czech names matched Typst's breaks in 30 of
+180 probes; now 180 of 180.
+
 Pipeline (`run.js --measurer both`, all fixtures, both modes): 0 line-count
 differences between the JS and Typst measurements, heights within 0.044 pt.
 Drift check (`--measurer js`: each emitted line renders as exactly one text line

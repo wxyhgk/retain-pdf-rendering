@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 "use strict";
 
-// Parity: our JS line layout vs Typst's own `linebreaks: "simple"` layout.
+// Parity: our JS line layout vs Typst's own `linebreaks: "simple"` layout
+// (or `--linebreaks optimized`, Typst's default Knuth–Plass breaking).
 //
-// node experiments/measure/compare-typst.js [--sizes 7,8.5,10,11.5] [--out DIR] [--verbose] [--export FILE]
+// node experiments/measure/compare-typst.js [--sizes 7,8.5,10,11.5] [--linebreaks simple|optimized] [--out DIR] [--verbose] [--export FILE]
 //
 // --export FILE writes every probe as self-contained measurer input (content
 // runs with formula box sizes) plus Typst's lines, for the Typst-free parity
@@ -25,6 +26,7 @@ const { OBJECT, LINE_SEPARATOR } = require("../../src/text/linebreak");
 const { loadMeasurer, contentRuns } = require("./measurer");
 const { mathSegments, DEMO_SENTENCES } = require("./shared");
 
+let LINEBREAKS = "simple";
 const PYTHON = process.env.RPR_PYTHON || path.resolve(__dirname, "../../../retain-pdf/backend/.venv/bin/python");
 
 function parseArgs(argv) {
@@ -38,6 +40,7 @@ function parseArgs(argv) {
     else if (argv[i] === "--only") options.only = argv[++i];
     else if (argv[i] === "--export") options.export = path.resolve(argv[++i]);
     else if (argv[i] === "--extra") options.extra = path.resolve(argv[++i]);
+    else if (argv[i] === "--linebreaks") LINEBREAKS = argv[++i];
   }
   return options;
 }
@@ -150,7 +153,7 @@ function normalize(text) {
 function probeLayout(probe, measurer, maths) {
   const prepared = measurer.prepare(contentRuns(probe.paragraph.segments, maths));
   const options = probe.hanging ? { hangingIndentEm: 1.1 } : { firstLineIndent: probe.paragraph.indent };
-  return { prepared, result: measurer.layout(prepared, { ...options, fontSize: probe.size, width: probe.width }) };
+  return { prepared, result: measurer.layout(prepared, { ...options, fontSize: probe.size, width: probe.width, align: probe.justify ? "justify" : "left", linebreaks: LINEBREAKS }) };
 }
 
 function ourLines(probe, measurer, maths) {
@@ -171,7 +174,7 @@ function typstDocument(probes, maths, weight = "regular") {
     const indent = !probe.hanging && probe.paragraph.indent > 0 ? `#h(${fmt(probe.paragraph.indent)}pt)` : "";
     // Right margin: Typst hangs line-final punctuation into it (overhang);
     // a page exactly as wide as the column would clip it from extraction.
-    lines.push(`#page(width: ${fmt(probe.width + 24)}pt, height: auto, margin: (left: 0pt, top: 0pt, bottom: 0pt, right: 24pt))[#{ set text(size: ${fmt(probe.size)}pt); set par(leading: 0.8em, justify: ${probe.justify}, linebreaks: "simple"${probe.hanging ? ", hanging-indent: 1.1em" : ""}); [${indent}#${inlineTypst(probe.paragraph.segments, maths)}] }]`);
+    lines.push(`#page(width: ${fmt(probe.width + 24)}pt, height: auto, margin: (left: 0pt, top: 0pt, bottom: 0pt, right: 24pt))[#{ set text(size: ${fmt(probe.size)}pt); set par(leading: 0.8em, justify: ${probe.justify}, linebreaks: "${LINEBREAKS}"${probe.hanging ? ", hanging-indent: 1.1em" : ""}); [${indent}#${inlineTypst(probe.paragraph.segments, maths)}] }]`);
   }
   return lines.join("\n") + "\n";
 }
@@ -278,7 +281,10 @@ function main() {
         paragraphs.set(key, {
           id: `${probe.fixture}|${probe.mode}|${probe.node}|${probe.para}`,
           content: contentRuns(probe.paragraph.segments, maths).map(({ value, ...run }) => run),
-          options: probe.hanging ? { hangingIndentEm: 1.1 } : { firstLineIndent: probe.paragraph.indent },
+          options: {
+            ...(probe.hanging ? { hangingIndentEm: 1.1 } : { firstLineIndent: probe.paragraph.indent }),
+            ...(LINEBREAKS === "optimized" ? { align: probe.justify ? "justify" : "left", linebreaks: "optimized" } : {})
+          },
           width: probe.width,
           typst: {}
         });
@@ -287,7 +293,7 @@ function main() {
     });
     fs.mkdirSync(path.dirname(options.export), { recursive: true });
     fs.writeFileSync(options.export, JSON.stringify({
-      generator: "node experiments/measure/compare-typst.js --export test/fixtures/text-parity/typst-lines.json",
+      generator: `node experiments/measure/compare-typst.js${LINEBREAKS === "optimized" ? " --linebreaks optimized" : ""} --export ${path.relative(path.resolve(__dirname, "../.."), options.export)}`,
       typst: typst.version(),
       font: "data/fonts/source-han-serif-sc-regular.json",
       summary,

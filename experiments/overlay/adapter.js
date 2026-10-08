@@ -78,7 +78,10 @@ function loadJob(jobDir) {
     document,
     translations,
     profile,
-    basePdf: stripped ? path.join(jobDir, "artifacts/render_prewarm", stripped) : null,
+    // Image-only (scanned) sources have no text layer to strip: the source
+    // itself is the base and the cover fills hide the original text pixels.
+    basePdf: stripped ? path.join(jobDir, "artifacts/render_prewarm", stripped) : (sourcePdf ? path.join(sourceDir, sourcePdf) : null),
+    baseIsSource: !stripped,
     sourcePdf: sourcePdf ? path.join(sourceDir, sourcePdf) : null,
     renderedPdf: renderedPdf ? path.join(renderedDir, renderedPdf) : null
   };
@@ -274,8 +277,22 @@ function buildModel(job, options = {}) {
       for (const [id, entry] of Object.entries(paint)) {
         if (blocks.some(block => block.id === id) && Array.isArray(entry.cover)) textBoxes.push(entry.cover.map(Number));
       }
-      const obstacleBoxes = absoluteBlocks.filter(block => block.sourceOnly).map(block => block.bbox);
+      const ocrObstacles = absoluteBlocks.filter(block => block.sourceOnly);
+      // Vector geometry inside an OCR obstacle's box belongs to it; decided on
+      // the OCR boxes before they are tightened below.
+      const obstacleBoxes = ocrObstacles.map(block => block.bbox);
       const { obstacles, counts } = VectorObstacles.vectorObstacles(drawings, textBoxes, obstacleBoxes);
+      // OCR obstacle boxes often reach far past their ink (a figure box
+      // covering the paragraphs above it); the fitter would then shrink text
+      // that never touched the figure. Tighten each to its ink in the source.
+      if (options.tightenObstacles) {
+        VectorObstacles.obstacleInkBoxes(drawings, obstacleBoxes, textBoxes).forEach((result, index) => {
+          if (!result.tightened) return;
+          stats.obstaclesTightened = (stats.obstaclesTightened || 0) + 1;
+          ocrObstacles[index].ocrBbox = ocrObstacles[index].bbox;
+          ocrObstacles[index].bbox = result.bbox;
+        });
+      }
       vectors.set(pageIndex, obstacles);
       for (const [key, value] of Object.entries(counts)) stats.vectorCounts[key] = (stats.vectorCounts[key] || 0) + value;
       stats.vectorObstacles += obstacles.length;
