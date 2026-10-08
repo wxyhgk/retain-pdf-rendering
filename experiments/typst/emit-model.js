@@ -156,4 +156,4 @@ function fittedDocument(fitted, prototypeNodes, maths, emitters) {
   return lines.join("\n") + "\n";
 }
 
-module.exports = { fittedDocument, flatten };
+module.exports = { fittedDocument, flatten, emitTextNode, fmt };

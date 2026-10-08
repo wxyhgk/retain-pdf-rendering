@@ -1,0 +1,236 @@
+"use strict";
+
+// retain-pdf job (document.v1.json + translation payloads + prewarm visual
+// profile) -> the layout model src/fit-model.js consumes. Read-only: nothing
+// is written inside the job directory.
+//
+// Mapping (see README.md for the reasoning):
+//   text/body (translated)            -> stream, styleKind body_text (shared body font)
+//   text/title (translated)           -> block type "title", mainTitle
+//   text/heading (translated)         -> block type "title"
+//   text/figure_caption (translated)  -> block type "image_caption"
+//   text/table_caption (translated)   -> block type "table_caption"
+//   text/image_footnote, table_footnote (translated) -> caption block of that type
+//   any other translated text         -> block type "text" (multi/single by source lines)
+//   everything else (display formulas, formula numbers, images, tables,
+//   headers, page numbers, untranslated text) -> opaque obstacle ("image"
+//   kind): never painted, kept from the source PDF, blocks collisions.
+
+const fs = require("node:fs");
+const path = require("node:path");
+
+const CAPTION_TYPES = {
+  figure_caption: "image_caption",
+  image_caption: "image_caption",
+  table_caption: "table_caption",
+  image_footnote: "image_footnote",
+  table_footnote: "table_footnote",
+  chart_caption: "chart_caption"
+};
+
+function readJSON(file) {
+  return JSON.parse(fs.readFileSync(file, "utf8"));
+}
+
+function blockNumber(id) {
+  const match = String(id || "").match(/-b0*(\d+)$/);
+  return match ? Number(match[1]) : NaN;
+}
+
+function median(values, fallback) {
+  const sorted = values.filter(Number.isFinite).sort((a, b) => a - b);
+  if (!sorted.length) return fallback;
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
+// Source line pitch of a block: synthetic/real line boxes when there are
+// several, else the block height (single-line titles, captions).
+function linePitch(block) {
+  const lines = Array.isArray(block.lines) ? block.lines : [];
+  const heights = lines.map(line => Array.isArray(line.bbox) ? line.bbox[3] - line.bbox[1] : NaN);
+  const pitch = median(heights, NaN);
+  if (Number.isFinite(pitch) && pitch > 0) return pitch;
+  return Math.max(1, block.bbox[3] - block.bbox[1]);
+}
+
+function loadJob(jobDir) {
+  const document = readJSON(path.join(jobDir, "ocr/normalized/document.v1.json"));
+  const manifest = readJSON(path.join(jobDir, "translated/translation-manifest.json"));
+  const translations = new Map();
+  for (const entry of manifest.pages || []) {
+    const items = readJSON(path.join(jobDir, "translated", entry.path));
+    for (const item of Array.isArray(items) ? items : []) {
+      translations.set(`${item.page_idx}:${item.block_idx}`, item);
+    }
+  }
+  const profileFile = path.join(jobDir, "artifacts/render_prewarm/visual_profile.v1.json");
+  const profile = fs.existsSync(profileFile) ? readJSON(profileFile) : { pages: {} };
+  const stripped = fs.readdirSync(path.join(jobDir, "artifacts/render_prewarm"))
+    .find(name => name.endsWith(".source-bbox-text-stripped.pdf"));
+  const sourceDir = path.join(jobDir, "source");
+  const sourcePdf = fs.existsSync(sourceDir) ? fs.readdirSync(sourceDir).find(name => name.endsWith(".pdf")) : null;
+  const renderedDir = path.join(jobDir, "rendered");
+  const renderedPdf = fs.existsSync(renderedDir) ? fs.readdirSync(renderedDir).find(name => name.endsWith(".pdf")) : null;
+  return {
+    document,
+    translations,
+    profile,
+    basePdf: stripped ? path.join(jobDir, "artifacts/render_prewarm", stripped) : null,
+    sourcePdf: sourcePdf ? path.join(sourceDir, sourcePdf) : null,
+    renderedPdf: renderedPdf ? path.join(renderedDir, renderedPdf) : null
+  };
+}
+
+function translationOf(item) {
+  if (!item || !item.policy_translate) return "";
+  return String(item.translated_text || "").trim();
+}
+
+// Font size the source PDF uses inside bbox: median span size of the text
+// layer (sourceSizes from run.js), else an estimate from the OCR lines.
+function seedFontSize(block, bbox, sizes, lineCount) {
+  const inside = (sizes || []).filter(span => {
+    const cx = (span.bbox[0] + span.bbox[2]) / 2;
+    const cy = (span.bbox[1] + span.bbox[3]) / 2;
+    return cx >= bbox[0] && cx <= bbox[2] && cy >= bbox[1] && cy <= bbox[3];
+  }).map(span => span.size);
+  const size = median(inside, NaN);
+  if (Number.isFinite(size) && size > 0) return { size: Number(size.toFixed(2)), from: "pdf" };
+  const pitch = linePitch(block);
+  return { size: Number(Math.min(lineCount > 1 ? pitch / 1.2 : pitch / 1.25, 12).toFixed(2)), from: "ocr" };
+}
+
+// Returns { model, paint } where paint[nodeId] = { cover, fill, text } for
+// the emitter (cover = rectangle to fill, colours as 0..1 rgb arrays).
+function buildModel(job, options = {}) {
+  const pages = [];
+  const paint = {};
+  const stats = { streams: 0, individualBody: 0, titles: 0, captions: 0, otherText: 0, obstacles: 0, untranslatedText: 0, seedsFromPdf: 0, seedsFromOcr: 0 };
+  const sourceSizes = options.sourceSizes || {};
+  const bodyStreams = [];
+  const maxPages = Number.isFinite(options.maxPages) ? options.maxPages : Infinity;
+  for (const page of job.document.pages.slice(0, maxPages)) {
+    const pageIndex = Number(page.page_index);
+    const profilePage = job.profile.pages?.[String(pageIndex)] || {};
+    const streams = [];
+    const absoluteBlocks = [];
+    const blocks = [];
+    for (const block of page.blocks || []) {
+      const bbox = (block.bbox || []).map(Number);
+      if (bbox.length !== 4 || bbox.some(value => !Number.isFinite(value))) continue;
+      const id = String(block.block_id);
+      const item = job.translations.get(`${pageIndex}:${blockNumber(id)}`);
+      const translated = block.type === "text" ? translationOf(item) : "";
+      const subType = String(block.sub_type || "");
+      const lineCount = Math.max(1, Array.isArray(block.lines) ? block.lines.length : 1);
+      const seed = seedFontSize(block, bbox, sourceSizes[String(pageIndex)], lineCount);
+      if (!translated) {
+        if (block.type === "text" && item && item.policy_translate) stats.untranslatedText += 1;
+        absoluteBlocks.push({ id, type: "image", kind: "image", bbox, sourceOnly: true });
+        stats.obstacles += 1;
+        continue;
+      }
+      const visual = profilePage.items?.[item.item_id] || null;
+      paint[id] = {
+        cover: visual && Array.isArray(visual.bbox) ? visual.bbox : bbox,
+        fill: visual?.background_rgb || profilePage.background_rgb || [1, 1, 1],
+        text: visual?.text_rgb || [0.07, 0.07, 0.07]
+      };
+      blocks.push({ id, translatable: true, translatedText: translated });
+      if (seed.from === "pdf") stats.seedsFromPdf += 1; else stats.seedsFromOcr += 1;
+      const sourceText = String(item.source_text || block.text || "");
+      if (subType === "body") {
+        // Source body text: the line pitch is ~1.2 x the font size.
+        const stream = {
+          pageIndex,
+          bbox,
+          fontSize: seed.size,
+          lineHeight: options.bodyLineHeight ?? 1.25,
+          paragraphGap: 0.16,
+          styleKind: "body_text",
+          debugRole: "body_candidate",
+          columnKey: String(block.metadata?.provider_column_index_guess || ""),
+          items: [{ id, text: sourceText, translatedText: translated, originalLineCount: lineCount }]
+        };
+        streams.push(stream);
+        bodyStreams.push(stream);
+        stats.streams += 1;
+        continue;
+      }
+      const type = subType === "title" || subType === "heading"
+        ? "title"
+        : (CAPTION_TYPES[subType] || "text");
+      if (type === "title") stats.titles += 1;
+      else if (type !== "text") stats.captions += 1;
+      else stats.otherText += 1;
+      absoluteBlocks.push({
+        id,
+        type,
+        kind: "text",
+        bbox,
+        text: sourceText,
+        translatedText: translated,
+        translatable: true,
+        mainTitle: subType === "title",
+        fontSize: seed.size,
+        lineCount
+      });
+    }
+    pages.push({
+      index: pageIndex,
+      width: Number(page.width),
+      height: Number(page.height),
+      blocks,
+      restoration: { streams, absoluteBlocks }
+    });
+  }
+  // Source body size (median of the body paragraphs' PDF span sizes): the
+  // overlay's ceiling for the shared body font. Seeds above it are clamped so
+  // the group does not start over the ceiling.
+  const sourceBodyFont = median(bodyStreams.map(stream => stream.fontSize), NaN);
+  if (Number.isFinite(sourceBodyFont)) {
+    stats.sourceBodyFont = Number(sourceBodyFont.toFixed(2));
+    for (const stream of bodyStreams) stream.fontSize = Math.min(stream.fontSize, stats.sourceBodyFont);
+  }
+  // The fitter shares one body font across the document and never lets a
+  // body paragraph shrink on its own. OCR boxes that are much tighter than
+  // the rest (a one-line box holding a translation with tall inline
+  // formulas) would drag every page down, so they leave the shared group and
+  // become individually fitted text blocks (see detachBody).
+  const model = { pages };
+  if (typeof options.standaloneFit === "function" && bodyStreams.length) {
+    const fits = bodyStreams.map(stream => options.standaloneFit(stream));
+    const typical = median(fits, NaN);
+    const floor = typical * (options.inheritBelow ?? 0.85);
+    bodyStreams.forEach((stream, index) => {
+      if (Number.isFinite(floor) && fits[index] < floor) {
+        detachBody(model, stream.items[0].id);
+        stats.individualBody = (stats.individualBody || 0) + 1;
+      }
+    });
+    stats.bodyStandaloneMedian = Number(typical.toFixed(2));
+  }
+  return { model, paint, stats };
+}
+
+// Moves a body paragraph out of the shared body group: it becomes a
+// multi-line text block, which the fitter sizes on its own (shrinks until it
+// fits its box under strictSourceFit). lineCount is at least 2 so the fitter
+// treats it as multi-line (single-line text blocks are never resized).
+function detachBody(model, id) {
+  for (const page of model.pages) {
+    const index = page.restoration.streams.findIndex(stream => stream.items[0].id === id);
+    if (index < 0) continue;
+    const [stream] = page.restoration.streams.splice(index, 1);
+    const item = stream.items[0];
+    page.restoration.absoluteBlocks.push({
+      id, type: "text", kind: "text", bbox: stream.bbox, text: item.text, translatedText: item.translatedText,
+      translatable: true, mainTitle: false, fontSize: stream.fontSize, lineCount: Math.max(2, item.originalLineCount)
+    });
+    return true;
+  }
+  return false;
+}
+
+module.exports = { loadJob, buildModel, detachBody };
