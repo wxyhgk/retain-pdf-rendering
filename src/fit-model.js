@@ -666,10 +666,16 @@
       }
     }
 
+    // The source bbox never changes during a fit and only style.width can,
+    // so the box is cached per width (frozen: callers only read it).
     function nodeBox(node) {
+      const cached = node._box;
+      if (cached && cached.width === node.style.width) return cached.box;
       const [left, top, right, bottom] = node.bbox;
       const width = node.style.width ?? Math.max(.1, right - left);
-      return { left, top, right: left + width, bottom: top + Math.max(.1, bottom - top) };
+      const box = Object.freeze({ left, top, right: left + width, bottom: top + Math.max(.1, bottom - top) });
+      node._box = { width: node.style.width, box };
+      return box;
     }
 
     // ----- geometry -----
@@ -687,12 +693,44 @@
       ].join("|");
     }
 
+    // Tuning alternates a node between a few candidate styles (probe, then
+    // back to the accepted one for collision checks), so keep the geometry of
+    // several styles per node instead of only the latest.
+    const GEOMETRY_ENTRIES_PER_NODE = 16;
+
     function geometry(node) {
-      let entry = geometryCache.get(node);
+      // Fast path: the same style as the previous lookup for this node, which
+      // collision scans hit millions of times, without building the string key.
+      const last = node._geometryLast;
+      const fontSize = layoutControlFontSize(node);
+      const lineRatio = effectiveLineRatio(node);
+      if (last && last.fontSize === fontSize && last.lineRatio === lineRatio &&
+          last.width === node.style.width && last.nowrap === Boolean(node.style.nowrap) &&
+          last.originalLines === node.originalLines &&
+          last.formulaScale === node.formula?.scale && last.numberRight === node.formula?.numberRight) {
+        return last.value;
+      }
+      const value = cachedGeometry(node);
+      node._geometryLast = {
+        fontSize, lineRatio, width: node.style.width, nowrap: Boolean(node.style.nowrap),
+        originalLines: node.originalLines, formulaScale: node.formula?.scale, numberRight: node.formula?.numberRight, value
+      };
+      return value;
+    }
+
+    function cachedGeometry(node) {
+      let entries = geometryCache.get(node);
+      if (!entries) geometryCache.set(node, entries = new Map());
       const key = geometryKey(node);
-      if (entry && entry.key === key) return entry.value;
+      const cached = entries.get(key);
+      if (cached) {
+        entries.delete(key);
+        entries.set(key, cached);
+        return cached;
+      }
       const value = computeGeometry(node);
-      geometryCache.set(node, { key, value });
+      entries.set(key, value);
+      if (entries.size > GEOMETRY_ENTRIES_PER_NODE) entries.delete(entries.keys().next().value);
       return value;
     }
 
@@ -1025,6 +1063,28 @@
       return out;
     }
 
+    // Strict-mode barrier of one node. It depends only on the node's current
+    // geometry (box and ink), so it is cached on that geometry object.
+    const strictBarriers = new WeakMap();
+    function strictBarrier(element, box) {
+      const value = geometry(element);
+      const cached = strictBarriers.get(value);
+      if (cached && cached.box.left === box.left && cached.box.top === box.top &&
+          cached.box.right === box.right && cached.box.bottom === box.bottom) {
+        return cached;
+      }
+      const ink = renderedContentRectsInPage(element);
+      // Ink a node keeps inside its own box is its own; ink that
+      // spills out is that node's collision to resolve when it is
+      // the source (and in the final audit), not a barrier here.
+      const owned = ink.filter(rect => rect.left >= box.left - 1e-6 && rect.right <= box.right + 1e-6 &&
+        rect.top >= box.top - 1e-6 && rect.bottom <= box.bottom + 1e-6);
+      const withBox = owned.concat([box]);
+      const barrier = { element, box, ink: owned, inkBounds: rectUnion(owned), withBox, withBoxBounds: rectUnion(withBox) };
+      strictBarriers.set(value, barrier);
+      return barrier;
+    }
+
     function textRectsInPage(node) {
       return geometry(node).text;
     }
@@ -1149,16 +1209,7 @@
             .filter((candidate) => candidate !== node && (includeGroupPeers || !nodeSet.has(candidate)))
             .map((element) => {
               const box = elementBoxInPage(element);
-              if (strict) {
-                const ink = renderedContentRectsInPage(element);
-                // Ink a node keeps inside its own box is its own; ink that
-                // spills out is that node's collision to resolve when it is
-                // the source (and in the final audit), not a barrier here.
-                const owned = ink.filter(rect => rect.left >= box.left - 1e-6 && rect.right <= box.right + 1e-6 &&
-                  rect.top >= box.top - 1e-6 && rect.bottom <= box.bottom + 1e-6);
-                const withBox = owned.concat([box]);
-                return { element, box, ink: owned, inkBounds: rectUnion(owned), withBox, withBoxBounds: rectUnion(withBox) };
-              }
+              if (strict) return strictBarrier(element, box);
               if (!barrierUsesTextGeometry) return { element, box, contentRects: [box], contentBounds: box };
               const rects = renderedContentRectsInPage(element);
               return { element, box, contentRects: rects, contentBounds: rectUnion(rects) || box };
