@@ -28,6 +28,8 @@ const CAPTION_TYPES = {
   chart_caption: "chart_caption"
 };
 
+const VectorObstacles = require("./vector-obstacles");
+
 function readJSON(file) {
   return JSON.parse(fs.readFileSync(file, "utf8"));
 }
@@ -144,7 +146,8 @@ function isBaselineCandidate(block, item, widthMed) {
 function buildModel(job, options = {}) {
   const pages = [];
   const paint = {};
-  const stats = { streams: 0, individualBody: 0, titles: 0, captions: 0, otherText: 0, obstacles: 0, untranslatedText: 0, seedsFromPdf: 0, seedsFromOcr: 0 };
+  const stats = { streams: 0, individualBody: 0, titles: 0, captions: 0, otherText: 0, obstacles: 0, untranslatedText: 0, seedsFromPdf: 0, seedsFromOcr: 0, vectorObstacles: 0, vectorCounts: {} };
+  const vectors = new Map();
   const sourceSizes = options.sourceSizes || {};
   const bodyStreams = [];
   const maxPages = Number.isFinite(options.maxPages) ? options.maxPages : Infinity;
@@ -241,6 +244,27 @@ function buildModel(job, options = {}) {
         ...(retain ? { sourceLinePitch: pitchFromPdf || pitchFromOcr || 0 } : {})
       });
     }
+    // Vector graphics without an OCR block (see vector-obstacles.js).
+    const drawings = options.drawings && options.drawings[String(pageIndex)];
+    if (drawings) {
+      const textBoxes = [];
+      for (const stream of streams) textBoxes.push(stream.bbox);
+      for (const block of absoluteBlocks) if (!block.sourceOnly) textBoxes.push(block.bbox);
+      for (const [id, entry] of Object.entries(paint)) {
+        if (blocks.some(block => block.id === id) && Array.isArray(entry.cover)) textBoxes.push(entry.cover.map(Number));
+      }
+      const obstacleBoxes = absoluteBlocks.filter(block => block.sourceOnly).map(block => block.bbox);
+      const { obstacles, counts } = VectorObstacles.vectorObstacles(drawings, textBoxes, obstacleBoxes);
+      vectors.set(pageIndex, obstacles);
+      for (const [key, value] of Object.entries(counts)) stats.vectorCounts[key] = (stats.vectorCounts[key] || 0) + value;
+      stats.vectorObstacles += obstacles.length;
+      if (options.vectorObstacles) {
+        obstacles.forEach((obstacle, index) => absoluteBlocks.push({
+          id: `vec-p${String(pageIndex + 1).padStart(3, "0")}-${index}`, type: "image", kind: "image",
+          bbox: obstacle.bbox, sourceOnly: true, vectorKind: obstacle.kind
+        }));
+      }
+    }
     pages.push({
       index: pageIndex,
       width: Number(page.width),
@@ -277,7 +301,7 @@ function buildModel(job, options = {}) {
     });
     stats.bodyStandaloneMedian = Number(typical.toFixed(2));
   }
-  return { model, paint, stats };
+  return { model, paint, stats, vectors };
 }
 
 // Moves a body paragraph out of the shared body group: it becomes a

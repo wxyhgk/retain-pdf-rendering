@@ -174,3 +174,37 @@ line spacing, else OCR line centres).
 
 `report.json` gains `bodyFill` (ink height / box height per painted body
 paragraph: count below 0.6, median).
+
+## Vector obstacles (`--vector-obstacles`)
+
+Text that runs past its own box was only checked against OCR blocks. Rules,
+frames, table lines, coloured panels, logos and glyphs drawn as paths have no
+OCR block, stay on the base PDF, and were invisible to the fitter.
+`vector-obstacles.js` reads them with PyMuPDF (`get_drawings(extended=True)`)
+and turns what is visible into obstacle nodes:
+
+- strokes: thin strips along every path segment (curves flattened, long
+  diagonals split), so a frame's interior stays free and enclosed text stays
+  inside it;
+- fills that enclose a repainted box (coloured panels): outline strips only;
+- other visible fills (bars, logos, path glyphs): rectangles, small
+  same-coloured pieces merged;
+- ignored: page-sized backgrounds, white / transparent fills, drawings inside
+  an OCR obstacle;
+- clipped to their clip path's scissor box, and cut out where a later white
+  mask is painted over them (knockout behind titles);
+- cut away inside every repainted text box (our cover fill paints over it).
+
+The runner always reports `vectorHits` (painted lines touching vector
+content); the flag feeds the obstacles to the fitter.
+
+| job | drawings | obstacles | hits without flag | with flag | size changes |
+|---|---|---|---|---|---|
+| 量子化学-14 | 350 (280 clipped away) | 368 | 0 | 0 | none |
+| SGNT | 91 | 177 | 3 (panel edge, table rule, advert frame) | 0 | p011-b0042 7.8 → 7.45 |
+
+Before clip paths and masks were honoured, 量子化学 showed 8 hits; all were
+invisible geometry (hatching clipped to a figure, chapter-opener circles
+under a white knockout). retain-pdf itself uses drawings only for source
+cleanup (cover-only on vector-heavy pages, glyphs drawn as paths), not to
+constrain layout.
