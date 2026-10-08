@@ -45,6 +45,11 @@
   const FONT_STEP = 0.05;     // pdftr_fit_size eps 0.08pt, on a 0.05 grid
   const MIN_FONT = 4.8;
   const INK_CLEARANCE = 0.05; // pt kept between a first line's ink and what is above
+  // Largest first-line nudge (lift into space above / push of the node below)
+  // the safety net may use, in em of the moved node: enough for a formula's
+  // depth or a descender bridging a tight gap, small enough that text stays
+  // where the source put it.
+  const NUDGE_MAX_EM = 0.5;
 
   function median(values) {
     const sorted = values.filter(Number.isFinite).sort((a, b) => a - b);
@@ -341,11 +346,94 @@
       }
     }
 
+    // Safety net, the counterpart of settleFirstLine: when this node's ink
+    // reaches the first line of a text node directly below (tight stacks such
+    // as exercise lists, where an inline formula's depth or a descender bridges
+    // a 1-2 pt gap), lower that node's first-line ink floor instead of
+    // shrinking this one, by at most NUDGE_MAX_EM and within the same
+    // 40%-of-box bound, and only if the node below still passes afterwards. Returns true when it helped.
+    function pushLowerFirstLine(node) {
+      let moved = false;
+      for (let round = 0; round < 3; round++) {
+        const hit = collision.textCollisionDetails([node], COLLIDE);
+        if (!hit || !hit.blocker || !hit.rect) return moved;
+        const lower = hit.blocker;
+        if (lower.retainUnsettled || !(isBodyNode(lower) || isNonBodyText(lower))) return moved;
+        const own = nodeBox(node);
+        const below = nodeBox(lower);
+        if (!(below.top > own.top)) return moved;
+        const lowerRects = geometry.textRectsInPage(lower);
+        if (!lowerRects.length) return moved;
+        const lowerFirstTop = Math.min(...lowerRects.map(rect => rect.top));
+        if (hit.rect.bottom < lowerFirstTop - 1e-6) return moved;
+        const inkBottom = geometry.renderedContentRectsInPage(node)
+          .filter(rect => Math.min(rect.right, below.right) - Math.max(rect.left, below.left) > 0)
+          .reduce((bottom, rect) => Math.max(bottom, rect.bottom), -Infinity);
+        if (!Number.isFinite(inkBottom)) return moved;
+        const floor = inkBottom - below.top + INK_CLEARANCE;
+        const previous = lower.retainInkFloor;
+        const pushBy = floor - Math.max(0, previous ?? 0);
+        if (floor > (below.bottom - below.top) * 0.4 || pushBy > layoutControlFontSize(lower) * NUDGE_MAX_EM ||
+            floor <= (previous ?? -Infinity) + 1e-6) return moved;
+        lower.retainInkFloor = floor;
+        if (!passes(lower)) {
+          if (previous === undefined) delete lower.retainInkFloor;
+          else lower.retainInkFloor = previous;
+          return moved;
+        }
+        moved = true;
+        if (traceFn) trace(node, "push-lower", { lower: lower.id, floor });
+      }
+      return moved;
+    }
+
+    // Safety net: when this node's ink reaches the node below and there is
+    // free space above it, start its first line higher (retainLift, at most
+    // NUDGE_MAX_EM and 40% of the box height, never closer than INK_CLEARANCE
+    // to anything above) instead of shrinking it. The smallest lift that passes is used.
+    function liftIntoSpaceAbove(node) {
+      if (Number.isFinite(Number(node.retainInkFloor))) return false;
+      const hit = collision.textCollisionDetails([node], COLLIDE);
+      if (!hit || !hit.blocker || !(nodeBox(hit.blocker).top > nodeBox(node).top)) return false;
+      const own = nodeBox(node);
+      const rects = geometry.textRectsInPage(node);
+      if (!rects.length) return false;
+      const firstTop = Math.min(...rects.map(rect => rect.top));
+      let aboveBottom = 0;
+      for (const other of node.page.nodes) {
+        if (other === node) continue;
+        for (const rect of geometry.renderedContentRectsInPage(other)) {
+          if (Math.min(rect.right, own.right) - Math.max(rect.left, own.left) <= 0) continue;
+          if (rect.top >= firstTop) continue;
+          aboveBottom = Math.max(aboveBottom, rect.bottom);
+        }
+      }
+      const maxLift = Math.min(firstTop - aboveBottom - INK_CLEARANCE, (own.bottom - own.top) * 0.4, layoutControlFontSize(node) * NUDGE_MAX_EM);
+      if (!(maxLift > 0.05)) return false;
+      const tryLift = value => {
+        node.retainLift = value;
+        return passes(node);
+      };
+      if (!tryLift(maxLift)) { delete node.retainLift; return false; }
+      let low = 0;
+      let high = maxLift;
+      for (let i = 0; i < 8; i++) {
+        const middle = (low + high) / 2;
+        if (tryLift(middle)) high = middle;
+        else low = middle;
+      }
+      node.retainLift = Math.round(high * 1000) / 1000;
+      if (!passes(node)) node.retainLift = maxLift;
+      if (traceFn) trace(node, "lift", { lift: node.retainLift, maxLift });
+      return true;
+    }
+
     // Profile defaults: retain-pdf's own block fit and leading-first repair
     // (fitOptions.retainFaithfulSchedule / retainLeadingFirstRepair: false
     // restore the earlier approximations).
     const faithfulSchedule = run.fitOptions.retainFaithfulSchedule !== false;
     const leadingFirstRepair = run.fitOptions.retainLeadingFirstRepair !== false;
+    const pushLowerFirst = run.fitOptions.retainPushLowerFirstLine !== false;
 
     // The safety net after a scheduled size failed: first the first-line ink
     // floor; then, like retain-pdf's emergency path, give back leading (down
@@ -354,6 +442,8 @@
       if (passes(node)) return;
       settleFirstLine(node);
       if (passes(node)) return;
+      if (pushLowerFirst && pushLowerFirstLine(node) && passes(node)) return;
+      if (pushLowerFirst && liftIntoSpaceAbove(node) && passes(node)) return;
       let repairRatio = ratio;
       if (leadingFirstRepair) {
         const tight = ratioFor(Math.min(leadingEm, minLeadingEm));
@@ -378,6 +468,7 @@
       const pageBody = pageBodyFonts(bodyNodes);
       for (const node of bodyNodes) {
         const decided = faithfulSchedule ? retainScheduleFaithful(node, pageBody.get(node) || 0) : retainSchedule(node, pageBody.get(node) || 0);
+        node.retainDense = { small: Boolean(decided.denseSmall), heavy: Boolean(decided.heavyDenseSmall) };
         const ratio = ratioFor(decided.leadingEm);
         setStyle(node, decided.font, ratio);
         if (traceFn) {
@@ -514,9 +605,35 @@
       }
     }
 
+    // geometry_adjustments._apply_short_body_region_expansion: widen short,
+    // narrow text items (non-body text blocks and streams, not captions or
+    // titles) that sit under two body paragraphs of the same column, before
+    // any measurement. retain-pdf runs it in collect_page_seed_metrics.
+    function expandShortRegions(bodyNodes, nonBodyNodes) {
+      const isRegionText = node => isStream(node) || node.type === "text";
+      const byPage = new Map();
+      for (const node of bodyNodes.concat(nonBodyNodes.filter(isRegionText))) {
+        if (!byPage.has(node.page)) byPage.set(node.page, []);
+        byPage.get(node.page).push(node);
+      }
+      const bodySet = new Set(bodyNodes);
+      for (const [page, nodes] of byPage) {
+        const items = readingOrder(nodes).map(node => ({ id: node, anchor: bodySet.has(node), box: nodeBox(node) }));
+        const widened = T.shortRegionExpansion(items, Number(page.width) || 0);
+        for (const [node, right] of widened) {
+          const box = nodeBox(node);
+          node.style.width = Number((right - box.left).toFixed(3));
+          node.retainRegionWidened = { from: box.right, to: right };
+          if (traceFn) trace(node, "region-expand", { from: box.right, to: right });
+        }
+      }
+      facts.clear();
+    }
+
     function prepare() {
       const bodyNodes = run.scopedNodes(isBodyNode);
       const nonBodyNodes = run.scopedNodes(isNonBodyText);
+      if (run.fitOptions.retainRegionExpansion !== false) expandShortRegions(bodyNodes, nonBodyNodes);
       blendBodySeeds(bodyNodes);
       seedLeading(bodyNodes, nonBodyNodes);
       topGaps(bodyNodes.concat(nonBodyNodes, run.scopedNodes(node => isBlock(node) && node.type === "title")));
@@ -671,16 +788,25 @@
       return nodes.slice().sort((a, b) => (a.page.index - b.page.index) || (nodeBox(a).top - nodeBox(b).top) || (nodeBox(a).left - nodeBox(b).left));
     }
 
-    function fitBody() {
+    // `smoothing` (passes/retain-smoothing.js, optional) supplies retain-pdf's
+    // remaining body stages; they run where body_pipeline.py runs them under
+    // FONT_UNIFY_MODE "role_min".
+    function fitBody(smoothing = null) {
       const bodyNodes = readingOrder(run.scopedNodes(isBodyNode));
       if (!bodyNodes.length) return;
       blockFit(bodyNodes);
       const groups = pages(bodyNodes);
+      if (smoothing) smoothing.inheritShort(groups);
       const target = bookTarget(groups);
       unify(groups, target);
       for (const group of groups) growUnderfilled(group);
       for (const group of groups) harmonizeUnderfilled(group);
       for (const group of groups) recoverUnderfilled(group);
+      if (smoothing) {
+        smoothing.pageAnchor(groups);
+        smoothing.harmonizeLong(groups);
+        smoothing.smoothAdjacent(groups);
+      }
       unify(groups, target);
       for (const group of groups) recoverUnderfilled(group);
       run.retainBookBodyFont = target;
@@ -694,7 +820,21 @@
     }
 
     // Shared with passes/retain-titles.js (same safety net and style rules).
-    const helpers = Object.freeze({ ratioFor, setStyle, largestPassing, passes, COLLIDE, FONT_STEP });
+    // Non-body text sized before the body pass (scheduleNonBody) and repaired
+    // after it: smoothing may change the size it is repaired from.
+    function setNonBodyFont(node, font) {
+      const decided = nonBodyDecisions.get(node);
+      if (!decided) return false;
+      setStyle(node, font, effectiveLineRatio(node));
+      nonBodyDecisions.set(node, { ...decided, font });
+      return true;
+    }
+
+    const helpers = Object.freeze({
+      ratioFor, setStyle, largestPassing, passes, passesAt, raiseFontSafely, COLLIDE, FONT_STEP,
+      isBodyNode, isNonBodyText, factsOf, density, lineCount, leadingOf, contextAnchors, readingOrder, trace,
+      setNonBodyFont, isNonBodyScheduled: node => nonBodyDecisions.has(node)
+    });
 
     return { prepare, fitBody, scheduleNonBody, repairNonBody, nonBodyOptions, helpers };
   }

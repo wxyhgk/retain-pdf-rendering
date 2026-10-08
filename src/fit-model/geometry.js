@@ -46,6 +46,7 @@
         node.formula ? `${node.formula.scale}|${node.formula.numberRight}` : "",
         // retain profile only: first-line ink floor (passes/retain-body.js).
         node.retainInkFloor ?? "",
+        node.retainLift ?? "",
         // balanced line breaking accepted by passes/justify.js.
         node.balanceLines ? 1 : ""
       ].join("|");
@@ -66,14 +67,14 @@
           last.width === node.style.width && last.nowrap === Boolean(node.style.nowrap) &&
           last.originalLines === node.originalLines &&
           last.formulaScale === node.formula?.scale && last.numberRight === node.formula?.numberRight &&
-          last.inkFloor === node.retainInkFloor && last.balance === Boolean(node.balanceLines)) {
+          last.inkFloor === node.retainInkFloor && last.lift === node.retainLift && last.balance === Boolean(node.balanceLines)) {
         return last.value;
       }
       const value = cachedGeometry(node);
       node._geometryLast = {
         fontSize, lineRatio, width: node.style.width, nowrap: Boolean(node.style.nowrap),
         originalLines: node.originalLines, formulaScale: node.formula?.scale, numberRight: node.formula?.numberRight,
-        inkFloor: node.retainInkFloor, balance: Boolean(node.balanceLines), value
+        inkFloor: node.retainInkFloor, lift: node.retainLift, balance: Boolean(node.balanceLines), value
       };
       return value;
     }

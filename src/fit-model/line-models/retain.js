@@ -140,7 +140,11 @@
           if (run && run.type === "math" && run.tex) formulas.push(String(run.tex));
         }
       }
-      const insets = typography.formulaInsets(fontSize, boxHeight, formulas);
+      let insets = typography.formulaInsets(fontSize, boxHeight, formulas);
+      // retainLift (passes/retain-body.js): the first line may start up to
+      // this many points above where it would, into free space above the box.
+      const lift = node ? Number(node.retainLift) : NaN;
+      if (Number.isFinite(lift) && lift > 0) insets = { top: insets.top - lift, bottom: insets.bottom };
       const floor = node ? Number(node.retainInkFloor) : NaN;
       if (!Number.isFinite(floor)) return insets;
       const text = (paragraphs || []).map(paragraph => paragraph?.text || "").join("");

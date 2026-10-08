@@ -115,7 +115,59 @@
     SAME_COLUMN_LEFT_PAGE_RATIO: 0.035,
     // render/layout/payload/formula_safety.py
     MIN_SAFE_CONTENT_HEIGHT_PT: 8.0,
-    MAX_FORMULA_INSET_HEIGHT_RATIO: 0.18
+    MAX_FORMULA_INSET_HEIGHT_RATIO: 0.18,
+    // render/layout/payload/geometry_adjustments.py: _apply_short_body_region_expansion
+    SHORT_BODY_REGION_MIN_ANCHORS: 2,
+    SHORT_BODY_REGION_X_TOLERANCE_PAGE_RATIO: 0.10,
+    SHORT_BODY_REGION_MAX_HEIGHT_RATIO: 0.72,
+    SHORT_BODY_REGION_MAX_WIDTH_RATIO: 0.78,
+    SHORT_BODY_REGION_RIGHT_EXPAND_RATIO: 0.30,
+    // geometry_adjustments._same_text_column (page width, not text width)
+    REGION_SAME_COLUMN_LEFT_PAGE_RATIO: 0.035,
+    // render/layout/payload/body_font_inheritance_policy.py (+ body_common
+    // SHORT_BODY_INHERIT_MAX_HEIGHT_PT)
+    SHORT_BODY_INHERIT_MIN_ANCHORS: 2,
+    SHORT_BODY_INHERIT_MAX_WIDTH_RATIO: 1.18,
+    SHORT_BODY_INHERIT_MAX_FONT_GROW_PT: 1.8,
+    SHORT_BODY_INHERIT_MAX_HEIGHT_PT: 16.0,
+    SHORT_BODY_INHERIT_MAX_LINES: 2,
+    SHORT_BODY_INHERIT_PAGE_ANCHOR_BONUS_PT: 0.18,
+    // render/policy/typography_policy.py: PAGE_BODY_FONT_ANCHOR_*
+    // (body_page_anchor_policy.py; candidate width ratio 0.32 is a literal there)
+    PAGE_BODY_FONT_ANCHOR_COUNT: 2,
+    PAGE_BODY_FONT_ANCHOR_MIN_HEIGHT_PT: 42.0,
+    PAGE_BODY_FONT_ANCHOR_MIN_LINES: 3,
+    PAGE_BODY_FONT_ANCHOR_MIN_WIDTH_RATIO: 0.62,
+    PAGE_BODY_FONT_ANCHOR_CANDIDATE_MIN_WIDTH_RATIO: 0.32,
+    PAGE_BODY_FONT_ANCHOR_APPLY_TOLERANCE_PT: 0.04,
+    // render/layout/payload/body_font_harmonize_policy.py (literals)
+    LONG_BODY_MIN_HEIGHT_PT: 90,
+    LONG_BODY_MIN_WIDTH_RATIO: 0.72,
+    LONG_BODY_MAX_DENSITY: 0.98,
+    LONG_BODY_FONT_BAND_PT: 0.14,
+    LONG_BODY_LEADING_BAND_EM: 0.05,
+    // render/layout/payload/body_context.py: ADJACENT_BODY_SMOOTH_* and
+    // BODY_DENSITY_TARGET_MAX
+    ADJACENT_BODY_SMOOTH_MAX_GAP_PT: 42.0,
+    ADJACENT_BODY_SMOOTH_MIN_WIDTH_RATIO: 0.72,
+    ADJACENT_BODY_SMOOTH_MIN_BOX_HEIGHT_PT: 36.0,
+    ADJACENT_BODY_SMOOTH_MIN_WIDTH_PT: 64.0,
+    ADJACENT_BODY_SMOOTH_MIN_PAGE_WIDTH_RATIO: 0.38,
+    ADJACENT_BODY_SMOOTH_MIN_SOURCE_WORDS: 10,
+    ADJACENT_BODY_SMOOTH_MIN_TRANSLATED_ZH_CHARS: 18,
+    ADJACENT_BODY_SMOOTH_MAX_FONT_DELTA_PT: 0.24,
+    ADJACENT_BODY_SMOOTH_RELAXED_FONT_DELTA_PT: 0.34,
+    ADJACENT_BODY_SMOOTH_MAX_LEADING_DELTA_EM: 0.06,
+    ADJACENT_BODY_SMOOTH_RELAXED_LEADING_DELTA_EM: 0.09,
+    ADJACENT_BODY_SMOOTH_GROW_DENSITY_MAX: 0.95,
+    ADJACENT_BODY_SMOOTH_RELAXED_GROW_DENSITY_MAX: 0.99,
+    ADJACENT_BODY_SMOOTH_RELAXED_DENSITY_TRIGGER: 0.92,
+    ADJACENT_BODY_SMOOTH_FONT_GROW_SHARE: 0.6,
+    ADJACENT_BODY_SMOOTH_LEADING_GROW_SHARE: 0.35,
+    ADJACENT_BODY_SMOOTH_MIN_FONT_PT: 6.4,
+    ADJACENT_BODY_SMOOTH_MIN_LEADING_EM: 0.18,
+    ADJACENT_BODY_SMOOTH_MAX_PRESSURE_DELTA: 0.9,
+    BODY_DENSITY_TARGET_MAX: 0.92
   });
 
   const clamp = (value, low, high) => Math.min(high, Math.max(low, value));
@@ -194,6 +246,91 @@
     if (overlap >= Math.min(firstWidth, secondWidth) * C.SAME_COLUMN_OVERLAP_RATIO) return true;
     const tolerance = Math.max(C.SAME_COLUMN_LEFT_BASE_PT, (pageTextWidthMed > 0 ? pageTextWidthMed : 0) * C.SAME_COLUMN_LEFT_PAGE_RATIO);
     return Math.abs(first.left - second.left) <= tolerance;
+  }
+
+  // geometry_adjustments._apply_short_body_region_expansion (right edge only).
+  // A short, narrow non-body text item with at least two body anchors above
+  // it in the same column is widened by up to 30% of its width, never past
+  // the anchors' right edge or the page edge, so a translated one-liner such
+  // as an exercise heading does not wrap into the item below. retain-pdf also
+  // lifts the top by up to 5% of the height; this model has fixed box tops.
+  // `items` are in reading order: { id, anchor (body), box }. Returns a Map
+  // id -> new right edge for the widened items.
+  function shortRegionExpansion(items, pageWidth = 0) {
+    const out = new Map();
+    const anchors = items.filter(item => item.anchor);
+    if (anchors.length < C.SHORT_BODY_REGION_MIN_ANCHORS || items.length < C.SHORT_BODY_REGION_MIN_ANCHORS + 1) return out;
+    const sortedMedian = values => {
+      const sorted = values.filter(value => value > 0).sort((a, b) => a - b);
+      if (!sorted.length) return 0;
+      const middle = sorted.length >> 1;
+      return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
+    };
+    const medianHeight = sortedMedian(anchors.map(item => item.box.bottom - item.box.top));
+    const medianWidth = sortedMedian(anchors.map(item => item.box.right - item.box.left));
+    if (!(medianHeight > 0) || !(medianWidth > 0)) return out;
+    const sameColumn = (first, second) => {
+      const firstWidth = Math.max(1.0, first.right - first.left);
+      const secondWidth = Math.max(1.0, second.right - second.left);
+      const overlap = Math.max(0.0, Math.min(first.right, second.right) - Math.max(first.left, second.left));
+      if (overlap >= Math.min(firstWidth, secondWidth) * C.SAME_COLUMN_OVERLAP_RATIO) return true;
+      return Math.abs(first.left - second.left) <= Math.max(C.SAME_COLUMN_LEFT_BASE_PT, (pageWidth || 0) * C.REGION_SAME_COLUMN_LEFT_PAGE_RATIO);
+    };
+    const xTolerance = Math.max(18.0, (pageWidth || 0) * C.SHORT_BODY_REGION_X_TOLERANCE_PAGE_RATIO);
+    items.forEach((current, position) => {
+      if (current.anchor) return;
+      const box = current.box;
+      const height = box.bottom - box.top;
+      const width = box.right - box.left;
+      if (!(height > 0) || !(width > 0)) return;
+      if (height > medianHeight * C.SHORT_BODY_REGION_MAX_HEIGHT_RATIO) return;
+      if (width > medianWidth * C.SHORT_BODY_REGION_MAX_WIDTH_RATIO) return;
+      // _previous_region_anchors: the nearest two earlier anchors above it.
+      const found = [];
+      for (let index = position - 1; index >= 0 && found.length < C.SHORT_BODY_REGION_MIN_ANCHORS; index--) {
+        const candidate = items[index];
+        if (!candidate.anchor) continue;
+        const anchorBox = candidate.box;
+        if (anchorBox.bottom > box.top) continue;
+        if (Math.abs(anchorBox.left - box.left) > xTolerance) continue;
+        if (anchorBox.right <= box.right) continue;
+        if (!sameColumn(anchorBox, box)) continue;
+        found.push(anchorBox);
+      }
+      if (found.length < C.SHORT_BODY_REGION_MIN_ANCHORS) return;
+      const anchorRight = Math.max(...found.map(anchorBox => anchorBox.right));
+      const pageRight = pageWidth > 0 ? pageWidth - 4.0 : anchorRight;
+      const targetRight = Math.min(anchorRight, pageRight, box.right + width * C.SHORT_BODY_REGION_RIGHT_EXPAND_RATIO);
+      if (targetRight > box.right + 0.5) out.set(current.id, Math.round(targetRight * 1000) / 1000);
+    });
+    return out;
+  }
+
+  // body_font_inheritance_policy._short_body_target_font
+  function shortBodyTargetFont(currentFont, targetFont) {
+    if (!(currentFont > 0) || !(targetFont > 0)) return 0;
+    if (targetFont <= currentFont) return Math.round(targetFont * 100) / 100;
+    return Math.round(Math.min(targetFont, currentFont + C.SHORT_BODY_INHERIT_MAX_FONT_GROW_PT) * 100) / 100;
+  }
+
+  // body_context.smooth_adjacent_body_pair, font half: given the two sizes,
+  // the relaxed flag and how far the smaller one may grow (already capped by
+  // density and safety, `growCap`), returns { smaller, larger } new sizes.
+  function smoothFontPair({ smallerFont, largerFont, relaxed, growCap = Infinity }) {
+    const maxDelta = relaxed ? C.ADJACENT_BODY_SMOOTH_RELAXED_FONT_DELTA_PT : C.ADJACENT_BODY_SMOOTH_MAX_FONT_DELTA_PT;
+    const delta = largerFont - smallerFont;
+    if (!(delta > maxDelta)) return { smaller: smallerFont, larger: largerFont };
+    const excess = delta - maxDelta;
+    const desired = smallerFont + excess * C.ADJACENT_BODY_SMOOTH_FONT_GROW_SHARE;
+    const grownTo = Math.round(Math.max(smallerFont, Math.min(desired, growCap)) * 100) / 100;
+    const grown = Math.max(0, grownTo - smallerFont);
+    const larger = Math.round(Math.max(C.ADJACENT_BODY_SMOOTH_MIN_FONT_PT, largerFont - Math.max(0, excess - grown)) * 100) / 100;
+    return { smaller: grownTo, larger };
+  }
+
+  // body_harmonize_policy.harmonize_long_body_payloads: clamp to median ± band.
+  function harmonizeBand(value, middle, band) {
+    return Math.round(Math.min(Math.max(value, middle - band), middle + band) * 100) / 100;
   }
 
   // body_font_unify_policy._low_page_font_target (+ _without_extreme_small_fonts).
@@ -515,7 +652,8 @@
   return {
     RETAIN: C,
     normalizeLeadingEm, bodyLeadingEm, nonBodyLeadingEm,
-    estimatedDensity, formulaEstimateDiscount, sameColumn,
+    estimatedDensity, formulaEstimateDiscount, sameColumn, shortRegionExpansion,
+    shortBodyTargetFont, smoothFontPair, harmonizeBand,
     lowQuantileFontTarget, unifyDecision,
     densitySlackRatio, sourceLineRichWeight, fontForRecoveryDensity, underfillTargetFont,
     underfillDensityLimit, recoveryDensityTarget, recoveryLeadingCap,
