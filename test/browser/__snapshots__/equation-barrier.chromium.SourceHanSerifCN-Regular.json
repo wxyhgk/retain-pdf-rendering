@@ -1,0 +1,30 @@
+{
+ "key": {
+  "browser": "chromium",
+  "major": 156,
+  "platform": "darwin",
+  "font": "SourceHanSerifCN-Regular"
+ },
+ "modes": {
+  "source": [
+   {
+    "page": 1,
+    "node": "stream:body_text/text#p001_b0001",
+    "fontSize": 8.26,
+    "lineHeight": "1.28"
+   },
+   {
+    "page": 1,
+    "node": "stream:body_text/text#p001_b0002",
+    "fontSize": 8.26,
+    "lineHeight": "1.28"
+   },
+   {
+    "page": 1,
+    "node": "block:interline_equation#p001_v0002",
+    "fontSize": 11,
+    "lineHeight": ""
+   }
+  ]
+ }
+}

@@ -1,0 +1,212 @@
+{
+ "key": {
+  "browser": "firefox",
+  "major": 157,
+  "platform": "darwin",
+  "font": "system-fonts"
+ },
+ "modes": {
+  "source": [
+   {
+    "page": 1,
+    "node": "stream:body_text/text#p001_b0002",
+    "fontSize": 12.6,
+    "lineHeight": "1.28"
+   },
+   {
+    "page": 1,
+    "node": "stream:text/text#p001_b0004",
+    "fontSize": 12.85,
+    "lineHeight": "1.68"
+   },
+   {
+    "page": 1,
+    "node": "stream:body_text/text#p001_b0005",
+    "fontSize": 12.6,
+    "lineHeight": "1.28"
+   },
+   {
+    "page": 1,
+    "node": "block:title#p001_b0001",
+    "fontSize": 28,
+    "lineHeight": "1.345"
+   },
+   {
+    "page": 1,
+    "node": "block:page_footer#?",
+    "fontSize": 10,
+    "lineHeight": ""
+   },
+   {
+    "page": 2,
+    "node": "stream:body_text/text#p002_b0001",
+    "fontSize": 12.6,
+    "lineHeight": "1.28"
+   },
+   {
+    "page": 2,
+    "node": "stream:body_text/text#p002_b0004",
+    "fontSize": 12.6,
+    "lineHeight": "1.28"
+   },
+   {
+    "page": 2,
+    "node": "stream:body_text/text#p002_b0002",
+    "fontSize": 12.6,
+    "lineHeight": "1.28"
+   },
+   {
+    "page": 2,
+    "node": "stream:body_text/text#p002_b0003",
+    "fontSize": 12.6,
+    "lineHeight": "1.28"
+   },
+   {
+    "page": 2,
+    "node": "block:interline_equation#p002_v0003",
+    "fontSize": 11,
+    "lineHeight": ""
+   },
+   {
+    "page": 2,
+    "node": "block:interline_equation#p002_v0005",
+    "fontSize": 11,
+    "lineHeight": ""
+   },
+   {
+    "page": 2,
+    "node": "block:page_footer#?",
+    "fontSize": 10,
+    "lineHeight": ""
+   },
+   {
+    "page": 3,
+    "node": "block:chart_body#p003_v0002",
+    "fontSize": 18,
+    "lineHeight": ""
+   },
+   {
+    "page": 3,
+    "node": "block:chart_caption#p003_c0001",
+    "fontSize": 9.6,
+    "lineHeight": "1.2"
+   },
+   {
+    "page": 3,
+    "node": "block:interline_equation#p003_v0004",
+    "fontSize": 18,
+    "lineHeight": ""
+   },
+   {
+    "page": 4,
+    "node": "stream:body_text/text#p004_b0001",
+    "fontSize": 12.6,
+    "lineHeight": "1.28"
+   },
+   {
+    "page": 4,
+    "node": "stream:body_text/text#p004_b0003",
+    "fontSize": 12.6,
+    "lineHeight": "1.28"
+   },
+   {
+    "page": 4,
+    "node": "stream:body_text/text#p004_b0002",
+    "fontSize": 12.6,
+    "lineHeight": "1.28"
+   }
+  ],
+  "translation": [
+   {
+    "page": 1,
+    "node": "stream:body_text/text#p001_b0002",
+    "fontSize": 12.6,
+    "lineHeight": "1.28"
+   },
+   {
+    "page": 1,
+    "node": "stream:text/text#p001_b0004",
+    "fontSize": 12.85,
+    "lineHeight": "1.82"
+   },
+   {
+    "page": 1,
+    "node": "stream:body_text/text#p001_b0005",
+    "fontSize": 12.6,
+    "lineHeight": "1.28"
+   },
+   {
+    "page": 1,
+    "node": "block:title#p001_b0001",
+    "fontSize": 28,
+    "lineHeight": "1.345"
+   },
+   {
+    "page": 1,
+    "node": "block:page_footer#?",
+    "fontSize": 10,
+    "lineHeight": ""
+   },
+   {
+    "page": 2,
+    "node": "stream:body_text/text#p002_b0001",
+    "fontSize": 12.6,
+    "lineHeight": "1.28"
+   },
+   {
+    "page": 2,
+    "node": "stream:body_text/text#p002_b0004",
+    "fontSize": 12.6,
+    "lineHeight": "1.28"
+   },
+   {
+    "page": 2,
+    "node": "stream:body_text/text#p002_b0002",
+    "fontSize": 12.6,
+    "lineHeight": "1.28"
+   },
+   {
+    "page": 2,
+    "node": "stream:body_text/text#p002_b0003",
+    "fontSize": 12.6,
+    "lineHeight": "1.28"
+   },
+   {
+    "page": 2,
+    "node": "block:interline_equation#p002_v0003",
+    "fontSize": 11,
+    "lineHeight": ""
+   },
+   {
+    "page": 2,
+    "node": "block:interline_equation#p002_v0005",
+    "fontSize": 11,
+    "lineHeight": ""
+   },
+   {
+    "page": 2,
+    "node": "block:page_footer#?",
+    "fontSize": 10,
+    "lineHeight": ""
+   },
+   {
+    "page": 4,
+    "node": "stream:body_text/text#p004_b0001",
+    "fontSize": 12.6,
+    "lineHeight": "1.28"
+   },
+   {
+    "page": 4,
+    "node": "stream:body_text/text#p004_b0003",
+    "fontSize": 12.6,
+    "lineHeight": "1.28"
+   },
+   {
+    "page": 4,
+    "node": "stream:body_text/text#p004_b0002",
+    "fontSize": 12.6,
+    "lineHeight": "1.28"
+   }
+  ]
+ }
+}

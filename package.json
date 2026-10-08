@@ -4,6 +4,20 @@
   "description": "Layout restoration, DOM rendering and glyph-measured fitting for translated PDF pages built from MinerU layout output.",
   "license": "MIT",
   "main": "src/index.js",
-  "files": ["src", "README.md", "LICENSE"],
-  "engines": { "node": ">=22.8.0" }
+  "files": [
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "node --test \"test/*.test.js\"",
+    "test:browser": "node --test \"test/browser/*.test.js\"",
+    "test:all": "npm test && npm run test:browser"
+  },
+  "engines": {
+    "node": ">=22.8.0"
+  },
+  "devDependencies": {
+    "playwright": "^1.64.0"
+  }
 }

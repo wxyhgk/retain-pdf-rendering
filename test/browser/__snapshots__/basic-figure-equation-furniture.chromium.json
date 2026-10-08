@@ -1,0 +1,86 @@
+{
+ "key": {
+  "browser": "chromium",
+  "major": 156,
+  "platform": "darwin",
+  "font": "system-fonts"
+ },
+ "modes": {
+  "source": [
+   {
+    "page": 1,
+    "node": "stream:text/text#p001_b0002",
+    "fontSize": 7.6,
+    "lineHeight": "1.28"
+   },
+   {
+    "page": 1,
+    "node": "block:title#p001_b0001",
+    "fontSize": 28,
+    "lineHeight": "1.345"
+   },
+   {
+    "page": 1,
+    "node": "block:interline_equation#p001_v0003",
+    "fontSize": 11,
+    "lineHeight": ""
+   },
+   {
+    "page": 1,
+    "node": "block:image_footnote#p001_c0003",
+    "fontSize": 10.45,
+    "lineHeight": "1.55"
+   },
+   {
+    "page": 1,
+    "node": "block:page_header#?",
+    "fontSize": 11,
+    "lineHeight": ""
+   },
+   {
+    "page": 1,
+    "node": "block:page_footer#?",
+    "fontSize": 10,
+    "lineHeight": ""
+   }
+  ],
+  "translation": [
+   {
+    "page": 1,
+    "node": "stream:text/text#p001_b0002",
+    "fontSize": 7.6,
+    "lineHeight": "1.28"
+   },
+   {
+    "page": 1,
+    "node": "block:title#p001_b0001",
+    "fontSize": 28,
+    "lineHeight": "1.345"
+   },
+   {
+    "page": 1,
+    "node": "block:interline_equation#p001_v0003",
+    "fontSize": 11,
+    "lineHeight": ""
+   },
+   {
+    "page": 1,
+    "node": "block:image_footnote#p001_c0003",
+    "fontSize": 10.45,
+    "lineHeight": "1.55"
+   },
+   {
+    "page": 1,
+    "node": "block:page_header#?",
+    "fontSize": 11,
+    "lineHeight": ""
+   },
+   {
+    "page": 1,
+    "node": "block:page_footer#?",
+    "fontSize": 10,
+    "lineHeight": ""
+   }
+  ]
+ }
+}

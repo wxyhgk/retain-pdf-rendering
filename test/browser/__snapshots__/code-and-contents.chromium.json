@@ -1,0 +1,24 @@
+{
+ "key": {
+  "browser": "chromium",
+  "major": 156,
+  "platform": "darwin",
+  "font": "system-fonts"
+ },
+ "modes": {
+  "source": [
+   {
+    "page": 1,
+    "node": "stream:toc/text#p001_b0001",
+    "fontSize": 8.2,
+    "lineHeight": "1.22"
+   },
+   {
+    "page": 1,
+    "node": "block:code#p001_v0002",
+    "fontSize": 11,
+    "lineHeight": "1.12"
+   }
+  ]
+ }
+}
