@@ -92,6 +92,21 @@
     }),
     math: Object.freeze({ ascent: 1825 / 2048, descent: 443 / 2048 })
   });
+  // Ink extents (em above / below the baseline) of what a line contains, for
+  // the "measurer" line model. Typst's own line box is the face's typo
+  // ascender/descender (.88/.12 for Source Han Serif) but ink goes further:
+  // measured on SourceHanSerifSC-Regular, Latin lowercase reaches .816/-.271,
+  // parentheses and slashes -.272, CJK punctuation -.195, accented capitals
+  // .973; CJK ideographs stay within .851/-.084.
+  function sourceHanSerifInk(text) {
+    let ascent = .88;
+    let descent = .12;
+    if (/[\u00C0-\u00DE\u0100-\u017F\u1E00-\u1EFF]/.test(text)) ascent = .98;
+    if (/[A-Za-z0-9()[\]{}\/\\|,;_@$§µßþ\u0370-\u03FF\u0400-\u04FF]/.test(text)) descent = .28;
+    else if (/[，。、；：？！（）《》〈〉「」『』【】〖〗〔〕“”‘’…—]/.test(text)) descent = .2;
+    return { ascent, descent };
+  }
+
   const SANS_TYPES = new Set(["title", "header", "page_header", "footer", "page_footer", "page_number",
     "table_caption", "table_footnote", "chart_caption", "image_caption"]);
 
@@ -201,6 +216,19 @@
     return merged;
   }
 
+  // OCR/JSON round trips can leave doubled backslashes and outer display
+  // delimiters (`\\[a=b \\tag{1}\\]`); TeX renderers need the bare body.
+  function normalizeDisplayTeX(value) {
+    let tex = String(value || "").trim();
+    if (/^\\\\[\[(]/.test(tex)) tex = tex.replace(/\\\\(?=[A-Za-z\[\]()])/g, "\\");
+    for (const [open, close] of [["$$", "$$"], ["\\[", "\\]"], ["\\(", "\\)"], ["$", "$"]]) {
+      if (tex.startsWith(open) && tex.endsWith(close) && tex.length >= open.length + close.length) {
+        tex = tex.slice(open.length, -close.length).trim();
+      }
+    }
+    return tex;
+  }
+
   function defaultContentFor(options = {}) {
     const renderMathBox = typeof options.renderMathBox === "function" ? options.renderMathBox : null;
     const parseTocTextRows = typeof options.parseTocTextRows === "function" ? options.parseTocTextRows : null;
@@ -251,7 +279,10 @@
       if (block.kind === "table" && block.tableHTML) return { table: true };
       if (block.kind === "code") return { code: String(block.text || "") };
       if (block.kind === "formula") {
-        const formula = block.formulas?.[0] || block.text || "";
+        const raw = block.formulas?.[0] || block.text || "";
+        // Only when a renderer draws the formula: the browser oracle shows the
+        // stored string as text, so parity runs keep it verbatim.
+        const formula = renderMathBox ? normalizeDisplayTeX(raw) : raw;
         const equation = splitTag(formula);
         const tex = equation.body || formula;
         const box = renderMathBox ? renderMathBox(tex, true) : null;
@@ -374,6 +405,19 @@
     // advances differ from the main measurer's; missing roles use `measurer`.
     const roleMeasurers = config.measurers || {};
     const lineModel = config.lineModel === "css" ? "css" : "measurer";
+    // "measurer" model: ink extents per line text (em); lines of one node
+    // are spaced so that they can never overlap in ink.
+    const inkExtents = typeof config.inkExtents === "function" ? config.inkExtents : sourceHanSerifInk;
+    // Strict collisions (default with lineModel "measurer"): the DOM rules'
+    // tolerances — 1.5 px rect padding, 4.0 / 3.0 shared-edge overhang, the
+    // body first-line top exemption, page tolerance 1.5 — absorb the slack of
+    // CSS content areas, which are taller than ink. Measurer-model rects are
+    // ink, and the Typst output must never overlap, so all of them become 0:
+    // every line is tested; inside its own box a line may not touch the ink
+    // another node keeps inside that node's box (source boxes can overlap);
+    // outside its own box it may touch neither that ink nor the box. Ink that
+    // spills out of its node's box is resolved when that node is the source.
+    const strict = config.strictCollisions ?? (lineModel === "measurer");
     const pixelRound = config.cssPixelRounding ? (value => Math.ceil(value - 1e-9)) : (value => value);
     // Optional diagnostics: trace(event, details) at every stop decision.
     const trace = typeof config.trace === "function" ? config.trace : null;
@@ -675,9 +719,45 @@
       const painted = line => (line.justified && Number.isFinite(line.available) ? Math.max(line.width, line.available) : line.width);
       const fontSize = options.fontSize;
       if (lineModel === "measurer") {
-        const lines = result.lines.map(line => ({ ...line, naturalWidth: line.width, width: painted(line) }));
+        // The measurer's line pitch is the floor; on top of it a line's
+        // baseline sits at least (ink below the previous baseline + ink above
+        // this one) below the previous one, so Latin descenders can never
+        // reach the next line even at lineHeight <= 1 (leading 0).
+        const text = options.text || "";
+        const textAscent = Number.isFinite(using.metrics?.ascender) ? using.metrics.ascender * fontSize : null;
+        const textDescent = Number.isFinite(using.metrics?.descender) ? using.metrics.descender * fontSize : null;
+        const lines = [];
+        let previous = null;
+        let shift = 0;
+        for (const line of result.lines) {
+          const boxAbove = textAscent !== null && line.ascent > textAscent + 1e-6 ? line.ascent : 0;
+          const boxBelow = textDescent !== null && line.descent > textDescent + 1e-6 ? line.descent : 0;
+          const lineText = text.slice(line.start, line.end);
+          const hasText = lineText.replace(/[\s\u2028\uFFFC]/g, "").length > 0;
+          const ink = hasText ? inkExtents(lineText) : { ascent: 0, descent: 0 };
+          const above = Math.max(ink.ascent * fontSize, boxAbove);
+          const below = Math.max(ink.descent * fontSize, boxBelow);
+          let baseline = line.baseline + shift;
+          if (previous) {
+            const needed = previous.baseline + previous.below + above;
+            if (baseline < needed) { shift += needed - baseline; baseline = needed; }
+          }
+          const out = {
+            ...line,
+            naturalWidth: line.width,
+            width: painted(line),
+            top: line.top + shift,
+            baseline,
+            glyphTop: baseline - above,
+            glyphBottom: baseline + below
+          };
+          lines.push(out);
+          previous = { baseline, below };
+        }
         const leading = Number.isFinite(result.leading) ? result.leading : Math.max(0, (options.lineHeight - 1) * fontSize);
-        return { lines, height: result.height, maxLineWidth: result.maxLineWidth, leading };
+        const last = lines[lines.length - 1];
+        const height = Math.max(result.height + shift, last ? last.glyphBottom : 0);
+        return { lines, height, maxLineWidth: result.maxLineWidth, leading };
       }
       // CSS: rebuild the line boxes around the measurer's baselines.
       const textAscent = Number.isFinite(using.metrics?.ascender) ? using.metrics.ascender * fontSize : null;
@@ -1055,7 +1135,7 @@
           // 每个文本源都逐行检测自身实际文字。区别仅在障碍物：正文迭代以实际
           // 内容为障碍；其它文本迭代以布局边框为障碍。
           const sourceRects = textRectsInPage(node).filter((rect) => {
-            return checkAllTextForCollisions || rect.bottom > own.bottom + 1 ||
+            return strict || checkAllTextForCollisions || rect.bottom > own.bottom + 1 ||
               (!ignoreNodeTopOverflow && rect.top < own.top - 1) ||
               rect.left < own.left - 1 ||
               rect.right > own.right + 1;
@@ -1069,16 +1149,43 @@
             .filter((candidate) => candidate !== node && (includeGroupPeers || !nodeSet.has(candidate)))
             .map((element) => {
               const box = elementBoxInPage(element);
+              if (strict) {
+                const ink = renderedContentRectsInPage(element);
+                // Ink a node keeps inside its own box is its own; ink that
+                // spills out is that node's collision to resolve when it is
+                // the source (and in the final audit), not a barrier here.
+                const owned = ink.filter(rect => rect.left >= box.left - 1e-6 && rect.right <= box.right + 1e-6 &&
+                  rect.top >= box.top - 1e-6 && rect.bottom <= box.bottom + 1e-6);
+                const withBox = owned.concat([box]);
+                return { element, box, ink: owned, inkBounds: rectUnion(owned), withBox, withBoxBounds: rectUnion(withBox) };
+              }
               if (!barrierUsesTextGeometry) return { element, box, contentRects: [box], contentBounds: box };
               const rects = renderedContentRectsInPage(element);
               return { element, box, contentRects: rects, contentBounds: rectUnion(rects) || box };
             });
           for (const rect of sourceRects) {
-            if (avoidPageOverflow && (
-              rect.left < -1.5 || rect.top < -1.5 ||
-              rect.right > page.width + 1.5 || rect.bottom > page.height + 1.5
+            const pageTolerance = strict ? 0 : 1.5;
+            if ((avoidPageOverflow || strict) && (
+              rect.left < -pageTolerance || rect.top < -pageTolerance ||
+              rect.right > page.width + pageTolerance || rect.bottom > page.height + pageTolerance
             )) {
               return { source: node, blocker: null, rect, sourceName: blockDebugName(node), blockerName: "page-boundary" };
+            }
+            if (strict) {
+              const insideOwn = rect.left >= own.left - 1e-6 && rect.right <= own.right + 1e-6 &&
+                rect.top >= own.top - 1e-6 && rect.bottom <= own.bottom + 1e-6;
+              const hit = barriers.find((barrier) => {
+                if (bodyColumnIndependentFit && node.styleKind === "body_text" &&
+                    !horizontalBoxesOverlap(own, barrier.box, 1.5) && insideOwn) {
+                  return false;
+                }
+                const rects = insideOwn ? barrier.ink : barrier.withBox;
+                const bounds = insideOwn ? barrier.inkBounds : barrier.withBoxBounds;
+                if (!bounds || !rectsOverlap(rect, bounds, 0)) return false;
+                return rects.some((other) => rectsOverlap(rect, other, 0));
+              });
+              if (hit) return { source: node, blocker: hit.element, rect, sourceName: blockDebugName(node), blockerName: blockDebugName(hit.element) };
+              continue;
             }
             const hit = barriers.find((barrier) => {
               // 正文的字号填充只受同列（或原始框已相互侵入）的块约束。
@@ -1702,7 +1809,7 @@
         for (const other of page.nodes) {
           if (other === node) continue;
           for (const rect of textRectsInPage(other)) {
-            if (layoutRectsOverlap(formulaBox, rect)) return true;
+            if (layoutRectsOverlap(formulaBox, rect, strict ? 0 : 1.5)) return true;
           }
         }
         return false;
@@ -2000,6 +2107,6 @@
     OBJECT,
     LINE_SEPARATOR,
     // Pure helpers exposed for unit tests; not a stable API.
-    _internal: { gallopingGrow, rectsOverlap, rectUnion, layoutRectsOverlap, horizontalBoxesOverlap, collapseRuns, textToRuns, htmlToRuns }
+    _internal: { normalizeDisplayTeX, gallopingGrow, rectsOverlap, rectUnion, layoutRectsOverlap, horizontalBoxesOverlap, collapseRuns, textToRuns, htmlToRuns }
   };
 });

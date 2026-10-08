@@ -16,7 +16,8 @@
     "test:typst": "node scripts/test-typst-parity.js",
     "test:all": "npm test && npm run test:browser",
     "build:advance-table": "node scripts/build-advance-table.js",
-    "build:uax14": "node scripts/build-uax14-table.js"
+    "build:uax14": "node scripts/build-uax14-table.js",
+    "test:output": "node experiments/typst/check-output.js"
   },
   "engines": {
     "node": ">=22.8.0"
