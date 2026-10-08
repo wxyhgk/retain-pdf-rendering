@@ -14,9 +14,11 @@ DOM fitter; this directory holds the implementation.
 | `rects.js` | 113 | Pure rectangle tests and `gallopingGrow`. |
 | `content.js` | 215 | Which text a node shows, as measurer runs (`defaultContentFor`). Pure. |
 | `document.js` | 344 | Node building from a layout model, node accessors (`layoutControlFontSize`, `applyGroup`, `nodeBox`, …), the `Select` predicates. |
+| `typography-retain.js` | 350 | Profile "retain": retain-pdf's constants (each citing its source file) and pure rules — leading blends, density estimate, book target, unify decision, underfill target and limits, formula insets, geometry seeds. |
 | `line-models/base.js` | 41 | What both line models share: measuring a paragraph, painted line width. |
 | `line-models/measurer.js` | 94 | Typst geometry with ink-safe line spacing (what the Typst output paints). |
 | `line-models/css.js` | 102 | CSS line boxes around the measurer's breaks (what a browser measures). |
+| `line-models/retain.js` | 132 | Typography profile "retain": Typst cap-height..baseline lines, leading in em, a fit band separate from the ink, retain-pdf's formula insets and the first-line ink floor. |
 | `line-models/index.js` | 29 | Picks the line model from `ctx.lineModel`. |
 | `geometry.js` | 357 | Per-node geometry (lines, glyph rects, formula and code boxes), strict barriers, the geometry caches. |
 | `collision.js` | 213 | `textCollisionDetails` (one scan, strict or tolerant policy), `measureGroup`, `wouldCollideWithBlocks`. |
@@ -25,6 +27,7 @@ DOM fitter; this directory holds the implementation.
 | `passes/clamps.js` | 87 | Overflow clamps for translated references and code frames. |
 | `passes/final-audit.js` | 134 | The final glyph-level collision audit. |
 | `passes/formulas.js` | 178 | Formula shrink/expand and equation-number alignment. |
+| `passes/retain-body.js` | 569 | Profile "retain": retain-pdf's body pipeline (seed blend, leading, block fit, book-target unify, underfill grow / harmonize / recover) with the ink safety net. |
 | `run.js` | 190 | The pass order with its option sets — the recipe. |
 | `serialize.js` | 92 | The result as plain data. |
 | `index.js` | 109 | `createModelFitter`: builds `ctx`, wires the parts. |
@@ -42,7 +45,9 @@ document               ← constants
 line-models/base       (none)
 line-models/measurer   ← line-models/base
 line-models/css        ← line-models/base
-line-models/index      ← line-models/measurer, line-models/css
+typography-retain      (none)
+line-models/retain     ← line-models/base, typography-retain
+line-models/index      ← line-models/measurer, line-models/css, line-models/retain
 geometry               ← constants, rects, document
 collision              ← rects
 tuning                 ← rects, document
@@ -50,9 +55,10 @@ passes/titles          ← rects, document
 passes/clamps          ← document
 passes/final-audit     ← constants, document
 passes/formulas        ← rects, document
+passes/retain-body     ← document, typography-retain
 run                    ← document
 serialize              ← document
-index                  ← constants, content, rects, document, line-models/index, geometry, collision, tuning, passes/titles, passes/clamps, passes/final-audit, passes/formulas, run, serialize
+index                  ← constants, content, rects, document, line-models/index, geometry, collision, tuning, passes/titles, passes/clamps, passes/final-audit, passes/formulas, passes/retain-body, run, serialize
 ```
 
 Object-level (who receives what at runtime):
@@ -68,7 +74,8 @@ createModelFitter(config)
   fitDocument(model, fitOptions)                              │
     run = { doc, fitOptions, all, scopedNodes, strictSourceFit }
     tuning / titles / clamps / finalAudit / formulas = create…(ctx, run, { geometry, collision })
-    runFit(run, { tuning, titles, clamps, finalAudit, formulas })   ← run.js
+    retainBody = createRetainBodyPass(ctx, run, …)      (typography "retain" only)
+    runFit(run, { tuning, titles, clamps, finalAudit, formulas, retainBody })   ← run.js
 ```
 
 Rules (checked by `test/fit-model-modules.test.js`): a part resolves other
@@ -79,8 +86,10 @@ host (DOM, Zotero, LitMTrans).
 ## ctx and run
 
 `ctx` is created once per fitter and frozen: `measurer`, `roleMeasurers`,
-`contentFor`, `contentAreas`, `lineModel` (`"measurer"` or `"css"`),
-`inkExtents`, `strict` (strict collisions), `pixelRound`, `trace`.
+`contentFor`, `contentAreas`, `lineModel` (`"measurer"`, `"css"` or
+`"retain"`), `inkExtents`, `strict` (strict collisions), `pixelRound`, `trace`,
+`typography` (`"default"` or `"retain"`), `collisionPolicy` (`"strict"`,
+`"tolerant"` or `"ink"`).
 
 `run` is created per `fitDocument` call: `doc` (pages, nodes, mode),
 `fitOptions`, `all` (`doc.nodes`), `scopedNodes(predicate)`,
@@ -104,6 +113,9 @@ the fit writes:
 - `formula.scale`, `formula.numberRight`, `formula.fitted` — formula passes.
 - `_geometryLast`, `_box` — geometry fast-path caches (private to `geometry.js`
   and `document.js`'s `nodeBox`).
+- Profile "retain" only: `retainLeadingEm`, `retainInkFloor` (first-line ink
+  floor, part of the geometry cache key), `retainUnified`, `retainGrewFrom`;
+  `baseFont`, `lineRatio`, `baseLineRatio` are rewritten by its prepare step.
 
 ## Browser load order
 
@@ -116,9 +128,11 @@ fit-model/constants.js
 fit-model/rects.js
 fit-model/content.js
 fit-model/document.js
+fit-model/typography-retain.js
 fit-model/line-models/base.js
 fit-model/line-models/measurer.js
 fit-model/line-models/css.js
+fit-model/line-models/retain.js
 fit-model/line-models/index.js
 fit-model/geometry.js
 fit-model/collision.js
@@ -127,6 +141,7 @@ fit-model/passes/titles.js
 fit-model/passes/clamps.js
 fit-model/passes/final-audit.js
 fit-model/passes/formulas.js
+fit-model/passes/retain-body.js
 fit-model/run.js
 fit-model/serialize.js
 fit-model/index.js
@@ -146,3 +161,58 @@ node scripts/fit-model-equivalence.js generate /tmp/before [--large FILE] [--job
 # change code
 node scripts/fit-model-equivalence.js check /tmp/before [--large FILE] [--job DIR]...
 ```
+
+## Typography profile "retain"
+
+`createModelFitter({ …, typography: "retain" })` replaces the DOM fitter's
+one-shared-body-font group with retain-pdf's body rules
+(`retainpdf_pipeline/render/layout`, FONT_UNIFY_MODE "role_min"); every other
+option keeps its meaning. Without the switch nothing changes
+(`scripts/fit-model-equivalence.js` stays at zero differences).
+
+What the switch selects:
+
+- **Line model `retain`** — Typst default edges (top-edge cap-height,
+  bottom-edge baseline): a line is cap height tall, lines sit cap height +
+  leading apart, `lineRatio = capHeight + leading_em`. Each line reports a fit
+  band (the Typst line box) and its real ink. Blocks with formulas get
+  retain-pdf's content insets (`formula_safety`).
+- **Ink collisions** — text may run past its box (retain-pdf renders unified
+  body paragraphs without a box check), but never onto another node's ink,
+  a preserved element, the page edge, or into another text box of the same
+  column (a line band outside its box may enter such a box by ≤ 1 pt).
+- **`passes/retain-body.js`**, in this order, before and in place of the body
+  group of `run.js`:
+  1. prepare: seed blend (`estimate_font_size_pt`: 86% page baseline, 42nd
+     percentile, pitch-scaled; 14% block; clamp 8.4–14.2), body and non-body
+     leading (`estimate_leading_em`), first-line ink floors;
+  2. block fit (`fit_translated_block_metrics` schedule: page body − 0.12,
+     0.12 pt steps, emergency 0.14 pt steps to page body − 0.7);
+  3. unify to the book target (25th percentile of stable anchors);
+  4. underfill grow → harmonize → recover;
+  5. unify again → recover again.
+  Every size or leading a rule asks for is checked against the ink collision
+  test; if it fails, the largest value in between that passes is used. A
+  first line touched by ink from above gets a lower ink floor instead of a
+  smaller size.
+- Non-body groups keep the DOM rules, with their line ratio capped at
+  `capHeight + NON_BODY_LEADING_MAX` and retain-pdf's non-body leading as the
+  starting ratio.
+
+`fitOptions.retainBandFit: true` additionally keeps each body band inside its
+box (Typst `measure() <= fit_height`); retain-pdf itself does not require this.
+
+Densities use retain-pdf's estimate (`lines × fs × max(1.02, 1 + leading) ×
+formula discount / box height`) with the real line count instead of its
+character-unit estimate, so its thresholds (0.60, 0.80, 0.98, 1.08, 1.18)
+keep their calibration.
+
+Not ported: title fitting (`title_fit`, `title_binary_fit`), short / low-height
+body inheritance, `relax_short_body_context_heights`,
+`apply_page_body_font_anchor`, `restore_comfort_body_leading`,
+`harmonize_long_body_payloads`, `smooth_adjacent_body_payloads`,
+`refit_body_leading_after_font_unify`, `annotate_tall_body_density_heights`,
+the dense-small-box classification (dense = estimated density ≥ 1.08 here),
+compactness / formula-ratio inputs of the leading blend (0 unless a host
+supplies them), typography memory.
+

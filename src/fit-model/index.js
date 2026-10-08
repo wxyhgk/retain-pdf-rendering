@@ -7,7 +7,7 @@
 (function (root, factory) {
   "use strict";
   const NAME = "fitter";
-  const DEPENDENCIES = [["constants", "./constants"], ["content", "./content"], ["rects", "./rects"], ["document", "./document"], ["lineModel", "./line-models/index"], ["geometry", "./geometry"], ["collision", "./collision"], ["tuning", "./tuning"], ["titlePasses", "./passes/titles"], ["clampPasses", "./passes/clamps"], ["finalAuditPass", "./passes/final-audit"], ["formulaPasses", "./passes/formulas"], ["run", "./run"], ["serialize", "./serialize"]];
+  const DEPENDENCIES = [["constants", "./constants"], ["content", "./content"], ["rects", "./rects"], ["document", "./document"], ["lineModel", "./line-models/index"], ["geometry", "./geometry"], ["collision", "./collision"], ["tuning", "./tuning"], ["titlePasses", "./passes/titles"], ["clampPasses", "./passes/clamps"], ["finalAuditPass", "./passes/final-audit"], ["formulaPasses", "./passes/formulas"], ["retainBodyPass", "./passes/retain-body"], ["run", "./run"], ["serialize", "./serialize"]];
   const isNode = typeof module === "object" && module && module.exports;
   const parts = isNode ? null : ((root.RetainPdfRendering || {}).FitModelParts || {});
   const resolved = DEPENDENCIES.map(([key, file]) => {
@@ -21,7 +21,7 @@
     const namespace = root.RetainPdfRendering = root.RetainPdfRendering || {};
     (namespace.FitModelParts = namespace.FitModelParts || {})[NAME] = api;
   }
-})(typeof this === "object" && this ? this : globalThis, function (root, constants, content, rects, document, LineModels, Geometry, Collision, Tuning, Titles, Clamps, FinalAudit, Formulas, Run, Serialize) {
+})(typeof this === "object" && this ? this : globalThis, function (root, constants, content, rects, document, LineModels, Geometry, Collision, Tuning, Titles, Clamps, FinalAudit, Formulas, RetainBody, Run, Serialize) {
   "use strict";
   const { OBJECT, LINE_SEPARATOR, DEFAULT_CONTENT_AREAS, sourceHanSerifInk, FINAL_AUDIT_OPTIONS } = constants;
   const { defaultContentFor, normalizeDisplayTeX, collapseRuns, textToRuns, htmlToRuns } = content;
@@ -39,7 +39,12 @@
     // Optional per-role measurers ({ sans, sansBold }) for faces whose
     // advances differ from the main measurer's; missing roles use `measurer`.
     const roleMeasurers = config.measurers || {};
-    const lineModel = config.lineModel === "css" ? "css" : "measurer";
+    // Typography profile. "retain" ports retain-pdf's body font-size and
+    // leading rules (typography-retain.js, passes/retain-body.js) on top of the
+    // retain line model (Typst cap-height..baseline lines) and ink-on-ink
+    // collisions. Anything else keeps the DOM fitter's rules unchanged.
+    const typography = config.typography === "retain" ? "retain" : "default";
+    const lineModel = typography === "retain" ? "retain" : (config.lineModel === "css" ? "css" : "measurer");
     // "measurer" model: ink extents per line text (em); lines of one node
     // are spaced so that they can never overlap in ink.
     const inkExtents = typeof config.inkExtents === "function" ? config.inkExtents : sourceHanSerifInk;
@@ -52,14 +57,16 @@
     // another node keeps inside that node's box (source boxes can overlap);
     // outside its own box it may touch neither that ink nor the box. Ink that
     // spills out of its node's box is resolved when that node is the source.
-    const strict = config.strictCollisions ?? (lineModel === "measurer");
+    const strict = typography === "retain" ? true : (config.strictCollisions ?? (lineModel === "measurer"));
+    const collisionPolicy = typography === "retain" ? "ink" : (strict ? "strict" : "tolerant");
     const pixelRound = config.cssPixelRounding ? (value => Math.ceil(value - 1e-9)) : (value => value);
     // Optional diagnostics: trace(event, details) at every stop decision.
     const trace = typeof config.trace === "function" ? config.trace : null;
 
     // Everything the parts read from the configuration. No part sees `config`.
     const ctx = Object.freeze({
-      measurer, contentFor, contentAreas, roleMeasurers, lineModel, inkExtents, strict, pixelRound, trace
+      measurer, contentFor, contentAreas, roleMeasurers, lineModel, inkExtents, strict, pixelRound, trace,
+      typography, collisionPolicy
     });
     const lines = LineModels.createLineModel(ctx);
     const geometry = Geometry.createGeometry(ctx, lines);
@@ -90,7 +97,9 @@
         titles: Titles.createTitlePasses(ctx, run, deps),
         clamps: Clamps.createClampPasses(ctx, run, deps),
         finalAudit: FinalAudit.createFinalAuditPass(ctx, run, deps),
-        formulas: Formulas.createFormulaPasses(ctx, run, deps)
+        formulas: Formulas.createFormulaPasses(ctx, run, deps),
+        // Typography profile "retain" only: retain-pdf's body pipeline.
+        retainBody: ctx.typography === "retain" ? RetainBody.createRetainBodyPass(ctx, run, deps) : null
       });
     }
 

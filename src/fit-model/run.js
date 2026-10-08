@@ -31,6 +31,10 @@
     const { clampTranslatedOverflow, clampTranslatedCodeOverflow } = steps.clamps;
     const { enforceFinalTextCollisionSafety } = steps.finalAudit;
     const { fitLayoutFormulas } = steps.formulas;
+    // Typography profile "retain": retain-pdf's body pipeline replaces the
+    // shared body group, and non-body line ratios stay within its leading cap.
+    const retainBody = steps.retainBody;
+    const nonBody = retainBody ? retainBody.nonBodyOptions : (options => options);
 
     // ----- runLayoutParityEngine -----
 
@@ -39,6 +43,7 @@
     // remains an opt-in no-overflow inspection mode.
     const collisionFirstTextFit = !strictSourceFit;
 
+    if (retainBody) retainBody.prepare();
     demoteFalseSingleLineText();
     // Initial pass: shrink-only so oversized un-fitted formulas do not become
     // false body-text barriers during shared font iteration.
@@ -78,6 +83,8 @@
     clusterTitleFontSizes(Select.anyTitle, 1.0);
     keepShortTitlesOnOneLine(Select.otherTitle, { maxCharacters: 12, maxBorrowPx: 18, maxWidthRatio: 1.35 });
     const bodyMaxFont = Number(fitOptions.bodyMaxFont);
+    if (retainBody) retainBody.fitBody();
+    else {
     if (fitOptions.bodyNodeFontCaps) {
       capBodyNodes(scopedNodes(Select.body), {
         maxFont: Number.isFinite(bodyMaxFont) && bodyMaxFont > 0 ? Math.min(13, bodyMaxFont) : 13,
@@ -124,6 +131,7 @@
       skipLineExpansionAfterFontCollision: true
     });
     syncInheritedBodyFontToBodyGroup();
+    }
     const genericTextOptions = {
       step: 0.35,
       minFont: collisionFirstTextFit ? 4.8 : undefined,
@@ -138,12 +146,12 @@
       startFromMinimum: collisionFirstTextFit,
       stopWhenFilled: !collisionFirstTextFit
     };
-    tuneGroup(Select.list, { ...genericTextOptions, label: "list", includeGroupPeers: collisionFirstTextFit });
+    tuneGroup(Select.list, nonBody({ ...genericTextOptions, label: "list", includeGroupPeers: collisionFirstTextFit }));
     // A recognized contents stream owns its row grid, indentation and page
     // column.  Treating it as generic multi-line prose lets the fitter
     // change its fixed 8.2px/1.22 baseline and can clip a dense directory.
-    tuneEach(Select.debugTextMulti, { ...genericTextOptions, label: "text" });
-    tuneEach(Select.textBlockMulti, { ...genericTextOptions, label: "text-block" });
+    tuneEach(Select.debugTextMulti, nonBody({ ...genericTextOptions, label: "text" }));
+    tuneEach(Select.textBlockMulti, nonBody({ ...genericTextOptions, label: "text-block" }));
     const captionOptions = {
       step: 0.25,
       minFont: 5.2,
@@ -155,9 +163,9 @@
       avoidBlockOverlap: true
     };
     for (const type of ["table_caption", "table_footnote", "chart_caption", "image_caption", "image_footnote"]) {
-      tuneGroup(Select.captionType(type), { ...captionOptions, label: `caption:${type}` });
+      tuneGroup(Select.captionType(type), nonBody({ ...captionOptions, label: `caption:${type}` }));
     }
-    tuneGroup(Select.refs, {
+    tuneGroup(Select.refs, nonBody({
       label: "refs",
       step: 0.25,
       minFont: 4.8,
@@ -167,7 +175,7 @@
       maxLineRatio: 1.65,
       allowOverflow: false,
       avoidBlockOverlap: true
-    });
+    }));
     if (fitOptions.translatedClamp) clampTranslatedOverflow();
     clampTranslatedCodeOverflow();
     enforceFinalTextCollisionSafety();
