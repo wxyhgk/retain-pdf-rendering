@@ -71,7 +71,9 @@ function emitLine(node, line, flat, maths) {
   let boxAscent = 0;
   for (let i = line.start; i < end; i++) {
     const box = flat.boxes.get(i);
-    if (box) boxAscent = Math.max(boxAscent, (Number(box.heightEm) - Number(box.depthEm)) * size);
+    // The raw-LaTeX fallback is text set with the same top-edge: it adds
+    // nothing above the baseline; only formula SVG boxes do.
+    if (box && maths.get(box.tex, false).ok) boxAscent = Math.max(boxAscent, (Number(box.heightEm) - Number(box.depthEm)) * size);
   }
   return `#place(top + left, dx: ${fmt(line.x)}pt, dy: ${fmt(line.baseline - boxAscent)}pt, { set text(size: ${fmt(size)}pt, top-edge: "baseline", bottom-edge: "baseline"); ${content} })`;
 }

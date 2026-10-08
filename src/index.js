@@ -6,6 +6,7 @@ module.exports = {
   Model: require("./model"),
   Render: require("./render"),
   Fit: require("./fit"),
+  FitModel: require("./fit-model"),
   Text: require("./text/measurer"),
   // Advance table of the default face (Source Han Serif SC Regular), for
   // Text.createMeasurer({ metrics }). Browser/Zotero hosts load the same

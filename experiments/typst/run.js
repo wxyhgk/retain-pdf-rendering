@@ -334,23 +334,25 @@ print(json.dumps({"nodes": len(expected), "mismatch": bad}))
   return check.status === 0 ? JSON.parse(check.stdout) : { error: check.stderr };
 }
 
-// --fitter model: src/fit-model.js + the experimental JS measurer (Typst
-// spacing profile, since Typst draws the result), lines emitted as placed.
+// --fitter model: src/fit-model.js + RetainPdfRendering.Text (src/text, Typst
+// line breaking and line geometry: lineModel "measurer"), every line emitted
+// where the fitter placed it.
 function runModelFitter({ options, fixture, model, mode, out, maths, nodesByPage, injected }) {
   const FitModel = require("../../src/fit-model.js");
-  const { createMeasurer } = require("../../test/helpers/experimental-measurer");
-  const { FALLBACK_BOX } = require("../measure/shared");
+  const Text = require("../../src/text/measurer");
+  const { defaultFontTable } = require("../../src/index.js");
   const timings = {};
-  const base = createMeasurer({ profile: "typst" });
+  const base = Text.createMeasurer({ metrics: defaultFontTable() });
   let layouts = 0;
   const measurer = { ...base, layout(prepared, layoutOptions) { layouts += 1; return base.layout(prepared, layoutOptions); } };
   const renderMathBox = (tex, display) => {
     const entry = maths.get(tex, display);
     if (entry.ok) return { widthEm: entry.widthEm, heightEm: entry.heightEm, depthEm: entry.depthEm };
-    return FALLBACK_BOX(display ? `$$${tex}$$` : `$${tex}$`);
+    return Text.fallbackMathBox(display ? `$$${tex}$$` : `$${tex}$`);
   };
   const fitter = FitModel.createModelFitter({
     measurer,
+    lineModel: "measurer",
     contentFor: FitModel.defaultContentFor({ renderMathBox })
   });
   let started = performance.now();

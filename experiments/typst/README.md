@@ -115,3 +115,13 @@ Fix found while doing so: in Typst ≥ 0.13 inline content alone in a `block` is
 not a paragraph and ignores `hanging-indent`, so reference entries measured
 alone had no hanging indent while the output (entries joined by `parbreak()`)
 had one. Every paragraph is now wrapped in `par[...]` in both documents.
+
+## `--fitter model`
+
+`node experiments/typst/run.js <fixture> --fitter model [--mode ...] [--demo-inline-math] [--no-png] [--no-drift-check]`
+
+Fits with `src/fit-model.js` (the DOM fitter's rule set on data) and `src/text`
+(`lineModel: "measurer"`), then emits every line at the baseline the fitter
+computed (`emit-model.js`): Typst never breaks or positions text itself, so the
+drift check (each emitted line renders as exactly one line) must report 0.
+Tables, code and image placeholders reuse the prototype emitters.

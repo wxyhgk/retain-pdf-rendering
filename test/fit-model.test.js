@@ -5,9 +5,11 @@
 // Oracle: test/browser/__snapshots__/<fixture>.firefox.SourceHanSerifCN-Regular.json,
 // the per-node font size / line height the DOM fitter (src/fit.js) settles on
 // in Firefox with Source Han Serif. The model fitter runs on the same golden
-// layout models with the experimental pure-JS measurer:
-//   - profile "browser": Firefox's spacing (no CJK-Latin autospacing or CJK
-//     punctuation compression) and Gecko's whole-pixel content areas
+// layout models with RetainPdfRendering.Text (src/text) and lineModel "css":
+//   - CSS line boxes and Gecko's whole-pixel content areas (cssPixelRounding)
+//   - spacing "browser": the measurer's prepared paragraphs without what
+//     Firefox does not do (CJK-Latin autospacing, CJK punctuation
+//     compression); spacing "typst" (the measurer unchanged) is reported
 //   - sans nodes (titles, page furniture, captions) measured with the system
 //     Arial when present (macOS); without it they use the serif advances and
 //     are reported, not asserted
@@ -16,7 +18,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const FitModel = require("../src/fit-model.js");
-const { createMeasurer } = require("./helpers/experimental-measurer");
+const { createMeasurer } = require("./helpers/model-measurers");
 const P = require("./helpers/fit-model-parity");
 
 const FONT_TOLERANCE = 0.25;   // px
@@ -132,7 +134,7 @@ for (const fixture of P.fixtures()) {
   }
 }
 
-for (const profile of ["browser", "typst"]) {
+for (const profile of ["browser", "typst"]) { // spacing of the measurer
   for (const fixture of P.fixtures()) {
     const modes = fixture.expected.pages.some(page => (page.blocks || []).some(block => block.translatable && block.translatedText))
       ? ["source", "translation"]
@@ -167,7 +169,7 @@ test("fit-model: the invariant probes detect an oversized body stream", () => {
   // The user body-font override is applied after fitting and is never
   // backed off: 30pt (40px) body text must trip both probes.
   const model = JSON.parse(JSON.stringify(fixture.expected));
-  const fitter = FitModel.createModelFitter({ measurer: createMeasurer({ profile: "browser" }) });
+  const fitter = FitModel.createModelFitter({ measurer: createMeasurer({ spacing: "browser" }), lineModel: "css", cssPixelRounding: true });
   const strict = fitter.fitDocument(model, { mode: "translation", userBodyFontPt: 30 });
   const result = inspect(strict);
   assert.ok(result.collisions.length > 0, "a 40px body stream must collide with its neighbours");

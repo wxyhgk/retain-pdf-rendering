@@ -38,6 +38,29 @@
   → `{ fitLayoutPages, fitLayoutFormulas, runLayoutParityEngine, demoteFalseSingleLineText, clampTranslatedOverflow, clampTranslatedCodeOverflow, refreshLayoutPageScales, layoutPageCoordinateScale, restoreFitCache, saveFitCache }`。
   拟合状态（当前页范围、迭代轮次）按实例隔离；拟合缓存通过 `getStorage()` 读写，存储不可用时自动停用缓存。
 
+### `FitModel`（无 DOM，无浏览器）
+
+`fit.js` 拟合规则的数据版：同一套分组、选项、迭代顺序、取整与容差（`runLayoutParityEngine` / `fitLayoutFormulas` / `fitLayoutPages`），但直接作用于排版模型，文字由注入的测量器（`Text`）排版。结果是纯数据——每个节点的字号、行高和按页面绝对坐标排好的行——Typst 输出（`experiments/typst/emit-model.js`）或 DOM 渲染可以直接绘制，无需再次测量。
+
+```js
+const { FitModel, Text, defaultFontTable } = require("retain-pdf-rendering");
+const fitter = FitModel.createModelFitter({
+  measurer: Text.createMeasurer({ metrics: defaultFontTable() }),
+  contentFor: FitModel.defaultContentFor({ renderMathBox }), // 可选：公式盒尺寸
+  lineModel: "measurer"                                     // 或 "css"
+});
+const fitted = fitter.fitDocument(model, { mode: "translation" });
+// fitted.pages[].nodes[]: { id, label, kind, type, styleKind, flowKind, bbox, fontSize,
+//   lineHeight, styleLineHeight, lines[{ paragraph, start, end, x, top, baseline, width,
+//   glyphTop, glyphBottom, justified }], paragraphs[{ runs }], textRects, contentRects,
+//   formula?, code?, fit: { pass, stopReason, limiter, blocker } }
+```
+
+- `lineModel: "measurer"`（默认）：采用测量器自身的行几何（Typst：行高 1 em，行间 `leading = (lineHeight − 1) × fontSize`），节点顶部留半个行距，段间距为行距 + 段落间隔；这正是 Typst 输出绘制的节奏。
+- `lineModel: "css"`：用测量器的断行重建 CSS 行框（每行 `fontSize × lineHeight`，字形矩形为字体 content area 居中），`cssPixelRounding: true` 时按 Gecko 把 ascent/descent 向上取整到整像素。用于与浏览器拟合结果逐节点对比。
+- `measurers: { sans, sansBold }`：可选，为 layout.css 用无衬线字体的节点（标题、页眉页脚、图表题注）提供另一套字宽；缺省时用主测量器。`contentAreas` 可覆盖各字体的 content area。
+- 与 DOM 版的已知差异列在 `src/fit-model.js` 文件头（字体、按行的字形矩形、表格/图片按框、TOC 行、`clampTranslatedOverflow` 仅在 `translatedClamp: true` 时运行等）。
+
 ### `Text`（无 DOM，无浏览器）
 
 文字测量：从字体提取的字宽表 + 复刻 Typst 0.15.1 `linebreaks: "simple"` 的贪心断行（`lang: "zh"`、`top-edge: "ascender"`、`bottom-edge: "descender"`）。测量出的断行可以逐行交给 Typst 输出，测量与成品不会漂移。
@@ -123,6 +146,7 @@ measurer.fitFontSize(prepared, { width: 240, maxHeight: 80, lineHeight: 1.2, min
 - `npm run test:typst`：与 Typst 现场对比断行（`experiments/measure/compare-typst.js`，含公式盒与引号定向用例，共 2721 例）。需要 `typst`（`TYPST_BIN`）、retain-pdf 的字体目录（`RPR_FONT_DIR`）与装有 PyMuPDF 的 Python（`RPR_PYTHON`），缺任何一项时跳过。`npm run test:typst -- --export` 同时刷新离线记录。
 - `npm run test:browser`：真实浏览器中的渲染 + 拟合测试（`test/browser/`）。首次运行前执行 `npm install` 与 `npx playwright install firefox`（或 `chromium`）。未安装 Playwright 或浏览器时测试会跳过并说明原因。
 - `npm run test:all`：两者依次运行。
+- `test/fit-model.test.js`：`FitModel` 在 6 个夹具（原文/译文）上与 Firefox + 思源宋体浏览器快照逐节点对比（字号 ±0.25 px、行高 ±0.05），并检查与浏览器测试相同的不变量（不出页、最终碰撞审计、正文统一字号、确定性）。系统有 Arial（macOS）时标题/题注/页眉页脚也参与比较，否则只比较其余节点。
 - `test/fixtures/model-golden/`、`test/fixtures/render-golden/` 是抽离前由原代码生成的基准输出，用来保证抽离不改变行为。
 
 浏览器测试对每个 `model-golden` 夹具（有译文时原文、译文两种模式都测）用 `createRenderer` 生成页面、`createFitter().fitLayoutPages()` 拟合，然后在页面内检查：

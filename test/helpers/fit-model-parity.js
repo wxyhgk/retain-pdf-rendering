@@ -6,7 +6,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const FitModel = require("../../src/fit-model.js");
-const { createMeasurer } = require("./experimental-measurer");
+const { createMeasurer, compositeMetrics } = require("./model-measurers");
 
 const FIXTURES = path.resolve(__dirname, "../fixtures/model-golden");
 const SNAPSHOTS = path.resolve(__dirname, "../browser/__snapshots__");
@@ -38,26 +38,29 @@ const ARIAL = "/System/Library/Fonts/Supplemental/Arial.ttf";
 const ARIAL_BOLD = "/System/Library/Fonts/Supplemental/Arial Bold.ttf";
 const CJK_FALLBACK_SCALE = 1.021;
 let sansCache = null;
-function sansMeasurers(profile) {
+function sansMeasurers(spacing = "browser") {
   if (!fs.existsSync(ARIAL) || !fs.existsSync(ARIAL_BOLD)) return null;
   if (!sansCache) {
-    const { compositeMetrics } = require("./experimental-measurer");
     sansCache = {
       regular: compositeMetrics(ARIAL, undefined, CJK_FALLBACK_SCALE),
       bold: compositeMetrics(ARIAL_BOLD, undefined, CJK_FALLBACK_SCALE)
     };
   }
   return {
-    sans: createMeasurer({ profile, metrics: sansCache.regular }),
-    sansBold: createMeasurer({ profile, metrics: sansCache.bold })
+    sans: createMeasurer({ spacing, metrics: sansCache.regular }),
+    sansBold: createMeasurer({ spacing, metrics: sansCache.bold })
   };
 }
 
-function createFitter(profile = "typst", { sans = true } = {}) {
+// The browser oracle's geometry: CSS line boxes, Gecko's whole-pixel content
+// areas. spacing "browser" (Firefox) or "typst" (the measurer unchanged).
+function createFitter(spacing = "browser", { sans = true } = {}) {
   return FitModel.createModelFitter({
-    measurer: createMeasurer({ profile }),
-    measurers: sans ? (sansMeasurers(profile) || undefined) : undefined,
-    options: { parseTocTextRows }
+    measurer: createMeasurer({ spacing }),
+    measurers: sans ? (sansMeasurers(spacing) || undefined) : undefined,
+    options: { parseTocTextRows },
+    lineModel: "css",
+    cssPixelRounding: true
   });
 }
 

@@ -8,8 +8,21 @@
 // absolutely positioned lines — that a Typst emitter or a DOM renderer can
 // paint without measuring again.
 //
-//   createModelFitter({ measurer, contentFor?, options? })
+//   createModelFitter({ measurer, measurers?, contentFor?, options?, lineModel?,
+//                       contentAreas?, cssPixelRounding?, trace? })
 //     .fitDocument(model, { mode, strictSourceFit, userBodyFontPt, translatedClamp })
+//
+// Vertical line model (lineModel):
+//   "measurer" (default) — the measurer's own geometry (RetainPdfRendering.Text:
+//       Typst lines, ascender..descender tall, `leading` between lines). A node
+//       starts half a leading below its top and paragraphs are separated by
+//       leading + paragraph gap, the rhythm the Typst emitter paints.
+//   "css" — CSS line boxes rebuilt from the measurer's line breaks: every line
+//       is fontSize * lineHeight tall (taller only for an inline box that
+//       leaves the strut), glyph rectangles are the face's content area
+//       (contentAreas.serif/sans/math, hhea) centred on the line box, and with
+//       cssPixelRounding the ascent/descent are rounded up to whole pixels as
+//       Gecko does. This reproduces what the DOM fitter measures in a browser.
 //
 // The rule set is runLayoutParityEngine() / fitLayoutFormulas() /
 // fitLayoutPages() from fit.js, ported step by step with the same option
@@ -70,6 +83,8 @@
   // fallback (measured in Firefox on macOS: ascent 1.06 em, descent .34 em,
   // baseline still from the Arial strut).
   const DEFAULT_CONTENT_AREAS = Object.freeze({
+    // Source Han Serif (CN TTF and SC OTF share the ratio): hhea 1151/-286.
+    serif: Object.freeze({ ascent: 1.151, descent: .286 }),
     sans: Object.freeze({
       ascent: 1854 / 2048,
       descent: 434 / 2048,
@@ -358,6 +373,8 @@
     // Optional per-role measurers ({ sans, sansBold }) for faces whose
     // advances differ from the main measurer's; missing roles use `measurer`.
     const roleMeasurers = config.measurers || {};
+    const lineModel = config.lineModel === "css" ? "css" : "measurer";
+    const pixelRound = config.cssPixelRounding ? (value => Math.ceil(value - 1e-9)) : (value => value);
     // Optional diagnostics: trace(event, details) at every stop decision.
     const trace = typeof config.trace === "function" ? config.trace : null;
 
@@ -515,11 +532,12 @@
         if (node.toc) {
           prepared.tocRows = rows.map(row => {
             if (row?.gap) return { gap: true };
-            if (!row?.page) return { unparsed: true, label: measurer.prepare([{ type: "text", text: String(row?.text || "") }]) };
+            if (!row?.page) return { unparsed: true, labelText: String(row?.text || ""), label: measurer.prepare([{ type: "text", text: String(row?.text || "") }]) };
             const level = Math.max(0, Math.min(8, Number(row.level || 0)));
             const label = `${String(row.number || "")} ${String(row.title || "")}`;
             return {
               level,
+              labelText: label,
               label: measurer.prepare([{ type: "text", text: label }]),
               page: measurer.prepare([{ type: "text", text: String(row.page || "") }])
             };
@@ -529,6 +547,7 @@
         else {
           prepared.paragraphs = (content?.paragraphs || []).map(paragraph => ({
             runs: paragraph.runs || [],
+            text: runsText(paragraph.runs),
             indent: Number(paragraph.indent || 0),
             prepared: measurer.prepare(paragraph.runs || [])
           }));
@@ -542,6 +561,7 @@
         prepared.formula = measurer.prepare(content.formula);
         prepared.formulaRuns = content.formula;
         prepared.formulaIsText = !content.formula.some(run => run.type === "math");
+        prepared.formulaText = runsText(content.formula);
         prepared.number = content.number ? measurer.prepare([{ type: "text", text: content.number }]) : null;
         prepared.numberText = content.number || "";
       }
@@ -554,6 +574,7 @@
       else {
         prepared.paragraphs = (content?.paragraphs || []).map(paragraph => ({
           runs: paragraph.runs || [],
+          text: runsText(paragraph.runs),
           indent: 0,
           prepared: measurer.prepare(paragraph.runs || [])
         }));
@@ -631,16 +652,83 @@
       return value;
     }
 
-    function contentArea(role) {
-      const area = role ? contentAreas[role] : null;
-      if (!area) return {};
-      const out = { contentAscent: area.ascent, contentDescent: area.descent };
-      if (area.fallback) {
-        out.fallbackAscent = area.fallback.ascent;
-        out.fallbackDescent = area.fallback.descent;
-        out.fallbackPattern = area.fallback.pattern;
+    function cssArea(role) {
+      return (role && contentAreas[role]) || contentAreas.serif;
+    }
+
+    function runsText(runs) {
+      return (runs || []).map(run => run.type === "text" ? run.text : run.type === "math" ? "\uFFFC" : "\u2028").join("");
+    }
+
+    // One paragraph laid out by `using`, in the configured line model. Lines
+    // are relative to the paragraph origin; `width` is the painted width
+    // (the stretched width of a justified line).
+    function layoutText(using, prepared, options, role = null) {
+      const result = using.layout(prepared, {
+        fontSize: options.fontSize,
+        lineHeight: options.lineHeight,
+        width: options.nowrap ? 1e9 : options.width,
+        align: options.nowrap ? "left" : (options.align || "left"),
+        firstLineIndent: options.firstLineIndent || 0,
+        hangingIndent: options.hangingIndent || 0
+      });
+      const painted = line => (line.justified && Number.isFinite(line.available) ? Math.max(line.width, line.available) : line.width);
+      const fontSize = options.fontSize;
+      if (lineModel === "measurer") {
+        const lines = result.lines.map(line => ({ ...line, naturalWidth: line.width, width: painted(line) }));
+        const leading = Number.isFinite(result.leading) ? result.leading : Math.max(0, (options.lineHeight - 1) * fontSize);
+        return { lines, height: result.height, maxLineWidth: result.maxLineWidth, leading };
       }
-      return out;
+      // CSS: rebuild the line boxes around the measurer's baselines.
+      const textAscent = Number.isFinite(using.metrics?.ascender) ? using.metrics.ascender * fontSize : null;
+      const textDescent = Number.isFinite(using.metrics?.descender) ? using.metrics.descender * fontSize : null;
+      const area = cssArea(role);
+      const asc = pixelRound(area.ascent * fontSize);
+      const desc = pixelRound(area.descent * fontSize);
+      const fallback = area.fallback
+        ? { pattern: area.fallback.pattern, asc: pixelRound(area.fallback.ascent * fontSize), desc: pixelRound(area.fallback.descent * fontSize) }
+        : null;
+      const L = fontSize * options.lineHeight;
+      const halfLeading = (L - (asc + desc)) / 2;
+      const strutAbove = asc + halfLeading;
+      const strutBelow = desc + halfLeading;
+      const text = options.text || "";
+      const lines = [];
+      let y = 0;
+      for (const line of result.lines) {
+        // What sticks out beyond the measured face's own ascender/descender
+        // is an inline box; text itself sits in the CSS strut.
+        const boxAbove = textAscent !== null && line.ascent > textAscent + 1e-6 ? line.ascent : 0;
+        const boxBelow = textDescent !== null && line.descent > textDescent + 1e-6 ? line.descent : 0;
+        const lineAbove = Math.max(strutAbove, boxAbove);
+        const lineBelow = Math.max(strutBelow, boxBelow);
+        const baseline = y + lineAbove;
+        const lineText = text.slice(line.start, line.end);
+        const hasText = lineText.replace(/[\s\u2028\uFFFC]/g, "").length > 0;
+        const useFallback = fallback && fallback.pattern.test(lineText);
+        const glyphAsc = useFallback ? Math.max(asc, fallback.asc) : asc;
+        const glyphDesc = useFallback ? Math.max(desc, fallback.desc) : desc;
+        lines.push({
+          ...line,
+          naturalWidth: line.width,
+          width: painted(line),
+          top: y,
+          baseline,
+          ascent: asc,
+          descent: desc,
+          glyphTop: baseline - (hasText ? Math.max(glyphAsc, boxAbove) : boxAbove),
+          glyphBottom: baseline + (hasText ? Math.max(glyphDesc, boxBelow) : boxBelow)
+        });
+        y += lineAbove + lineBelow;
+      }
+      return { lines, height: y, maxLineWidth: result.maxLineWidth, leading: 0 };
+    }
+
+    // Vertical offset of the first line and the space between paragraphs.
+    function paragraphRhythm(fontSize, lineRatio, gapEm) {
+      if (lineModel === "css") return { top: 0, between: gapEm * fontSize };
+      const leading = Math.max(0, (lineRatio - 1) * fontSize);
+      return { top: leading / 2, between: leading + gapEm * fontSize };
     }
 
     function fontRole(node) {
@@ -691,8 +779,8 @@
       }
     }
 
-    function naturalWidth(prepared, fontSize, ratio, role = null, using = measurer) {
-      const result = using.layout(prepared, { fontSize, lineHeight: ratio, width: 1e9, nowrap: true, align: "left", ...contentArea(role) });
+    function naturalWidth(prepared, fontSize, ratio, role = null, using = measurer, text = "") {
+      const result = layoutText(using, prepared, { fontSize, lineHeight: ratio, nowrap: true, text }, role);
       const line = result.lines[0];
       return {
         width: result.maxLineWidth,
@@ -719,7 +807,7 @@
           (content.tocRows || []).forEach((row, index) => {
             if (row.gap) { y += .40 * fontSize; return; }
             const indent = row.unparsed ? 0 : row.level * .82 * fontSize;
-            const label = naturalWidth(row.label, fontSize, ratio, null, measurer);
+            const label = naturalWidth(row.label, fontSize, ratio, null, measurer, row.labelText);
             const lineTop = box.top + y;
             const glyph = label.lines[0];
             const glyphTop = lineTop + (glyph ? glyph.glyphTop : 0);
@@ -741,15 +829,18 @@
           const paragraphs = content.paragraphs || [];
           const singleNowrap = hasClassDebugText(node) && node.originalLines === "single";
           const align = singleNowrap ? "left" : textAlign(node);
+          const rhythm = paragraphRhythm(fontSize, ratio, node.paragraphGap);
+          y = rhythm.top;
           paragraphs.forEach((paragraph, index) => {
-            const result = measurer.layout(paragraph.prepared, {
+            const result = layoutText(measurer, paragraph.prepared, {
               fontSize,
               lineHeight: ratio,
               width,
               align,
               nowrap: singleNowrap || node.style.nowrap,
               firstLineIndent: node.refs || singleNowrap ? 0 : Math.max(0, paragraph.indent || 0),
-              hangingIndent: node.refs ? 1.1 * fontSize : 0
+              hangingIndent: node.refs ? 1.1 * fontSize : 0,
+              text: paragraph.text
             });
             let originX = contentLeft;
             if (singleNowrap && node.singleLineAlign === "center") {
@@ -758,14 +849,15 @@
             pushLineRects(out, result.lines, originX, box.top + y, index);
             out.scrollWidth = Math.max(out.scrollWidth, originX + result.maxLineWidth + STREAM_PADDING_RIGHT - box.left);
             y += result.height;
-            if (index < paragraphs.length - 1) y += node.paragraphGap * fontSize;
+            if (index < paragraphs.length - 1) y += rhythm.between;
           });
+          y += rhythm.top;
         }
         out.contentHeight = y;
       }
       else if (content.formula) {
         const scale = node.formula ? node.formula.scale : 1;
-        const natural = naturalWidth(content.formula, fontSize, ratio, node.content.formulaIsText ? "math" : null, measurer);
+        const natural = naturalWidth(content.formula, fontSize, ratio, node.content.formulaIsText ? "math" : null, measurer, content.formulaText);
         const hasNumber = Boolean(content.number);
         const cy = (box.top + box.bottom) / 2;
         const formulaHeight = natural.height || fontSize;
@@ -782,7 +874,7 @@
         out.formulaRect = formulaRect;
         if (natural.width > .5) out.text.push(formulaRect);
         if (hasNumber) {
-          const number = naturalWidth(content.number, fontSize, ratio, "math", measurer);
+          const number = naturalWidth(content.number, fontSize, ratio, "math", measurer, content.numberText);
           const anchor = node.formula && Number.isFinite(node.formula.numberRight)
             ? node.formula.numberRight
             : box.right - box.left; // var(--equation-number-right, 100%)
@@ -799,12 +891,15 @@
         const L = fontSize * ratio;
         const innerLeft = box.left + CODE_PADDING_X;
         const innerWidth = Math.max(1, box.right - box.left - 2 * CODE_PADDING_X);
-        const halfLeading = (L - 1.437 * fontSize) / 2;
+        const codeArea = lineModel === "css"
+          ? pixelRound(contentAreas.serif.ascent * fontSize) + pixelRound(contentAreas.serif.descent * fontSize)
+          : ((measurer.metrics?.ascender ?? .88) + (measurer.metrics?.descender ?? .12)) * fontSize;
+        const halfLeading = (L - codeArea) / 2;
         let y = CODE_PADDING_Y;
         for (const sourceLine of content.code.split("\n")) {
           let lineWidth = 0;
           const flush = () => {
-            if (lineWidth > .5) out.text.push({ left: innerLeft, right: innerLeft + lineWidth, top: box.top + y + halfLeading, bottom: box.top + y + halfLeading + 1.437 * fontSize });
+            if (lineWidth > .5) out.text.push({ left: innerLeft, right: innerLeft + lineWidth, top: box.top + y + halfLeading, bottom: box.top + y + halfLeading + codeArea });
             y += L;
             lineWidth = 0;
           };
@@ -827,23 +922,23 @@
         const paragraphs = content.paragraphs || [];
         const width = Math.max(0, box.right - box.left);
         const align = textAlign(node);
-        let y = 0;
+        const rhythm = paragraphRhythm(fontSize, ratio, 0);
+        let y = rhythm.top;
         paragraphs.forEach((paragraph, index) => {
-          const result = measurer.layout(paragraph.prepared, {
+          const result = layoutText(measurer, paragraph.prepared, {
             fontSize,
             lineHeight: ratio,
             width,
             align: node.style.nowrap ? "left" : align,
             nowrap: node.style.nowrap,
-            firstLineIndent: 0,
-            hangingIndent: 0,
-            ...contentArea(fontRole(node))
-          });
+            text: paragraph.text
+          }, fontRole(node));
           pushLineRects(out, result.lines, box.left, box.top + y, index);
           out.scrollWidth = Math.max(out.scrollWidth, result.maxLineWidth);
           y += result.height;
+          if (index < paragraphs.length - 1) y += rhythm.between;
         });
-        out.contentHeight = y;
+        out.contentHeight = y + rhythm.top;
       }
       out.clientHeight = clientHeight;
       out.scrollHeight = Math.max(clientHeight, out.contentHeight);
