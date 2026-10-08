@@ -27,8 +27,9 @@ DOM fitter; this directory holds the implementation.
 | `passes/clamps.js` | 87 | Overflow clamps for translated references and code frames. |
 | `passes/final-audit.js` | 134 | The final glyph-level collision audit. |
 | `passes/formulas.js` | 178 | Formula shrink/expand and equation-number alignment. |
-| `passes/retain-body.js` | 569 | Profile "retain": retain-pdf's body pipeline (seed blend, leading, block fit, book-target unify, underfill grow / harmonize / recover) with the ink safety net. |
+| `passes/retain-body.js` | 843 | Profile "retain": retain-pdf's body pipeline (seed blend, leading, block fit, book-target unify, underfill grow / harmonize / recover) with the ink safety net. |
 | `passes/retain-titles.js` | 102 | Profile "retain": every heading sized on its own box like retain-pdf's solve_title_fit (fill cap, 0.94 × box band, title/heading leading), backed off to 0.72 / 0.78 × after the body settles. On by default (`fitOptions.retainTitles: false` keeps the DOM title rules). |
+| `passes/retain-smoothing.js` | 307 | Profile "retain": retain-pdf's neighbour-consistency stages run inside the body pass — short-body inheritance, page body anchor, long-paragraph harmonizing, adjacent smoothing. On by default (`fitOptions.retainSmoothing: false` skips them). |
 | `passes/justify.js` | 82 | Post-fit balanced breaking of justified text, kept only if line count, vertical extents and collision state are unchanged (`config.balanceLines`, default on in "retain"). |
 | `run.js` | 190 | The pass order with its option sets — the recipe. |
 | `serialize.js` | 92 | The result as plain data. |
@@ -59,10 +60,11 @@ passes/final-audit     ← constants, document
 passes/formulas        ← rects, document
 passes/retain-body     ← document, typography-retain
 passes/retain-titles   ← document              (+ retain-body helpers at run time)
+passes/retain-smoothing ← document, typography-retain (+ retain-body helpers at run time)
 passes/justify         ← constants
 run                    ← document
 serialize              ← document
-index                  ← constants, content, rects, document, line-models/index, geometry, collision, tuning, passes/titles, passes/clamps, passes/final-audit, passes/formulas, passes/retain-body, passes/retain-titles, passes/justify, run, serialize
+index                  ← constants, content, rects, document, line-models/index, geometry, collision, tuning, passes/titles, passes/clamps, passes/final-audit, passes/formulas, passes/retain-body, passes/retain-titles, passes/retain-smoothing, passes/justify, run, serialize
 ```
 
 Object-level (who receives what at runtime):
@@ -122,7 +124,11 @@ the fit writes:
   the geometry cache key).
 - `alignOverride` — set when the node is built (retain: left-aligned main title).
 - Profile "retain" only: `retainLeadingEm`, `retainInkFloor` (first-line ink
-  floor, part of the geometry cache key), `retainUnified`, `retainGrewFrom`,
+  floor, part of the geometry cache key), `retainLift` (first line raised into
+  free space above, part of the geometry cache key), `retainRegionWidened`
+  (short-region expansion; the width itself is `style.width`), `retainDense`
+  (dense-small-box flags from the block fit), `retainShortInherited`,
+  `retainUnified`, `retainGrewFrom`,
   `retainUnsettled` (scheduled non-body text; read by the ink collision
   policy); `baseFont`, `lineRatio`, `baseLineRatio` are rewritten by its
   prepare step.
@@ -153,6 +159,7 @@ fit-model/passes/final-audit.js
 fit-model/passes/formulas.js
 fit-model/passes/retain-body.js
 fit-model/passes/retain-titles.js
+fit-model/passes/retain-smoothing.js
 fit-model/passes/justify.js
 fit-model/run.js
 fit-model/serialize.js
@@ -201,9 +208,14 @@ What the switch selects:
   with `fontWeight: "bold"`; the main title is left-aligned.
 - **`passes/retain-body.js`**, in place of the body group and the DOM
   non-body passes of `run.js`:
-  1. prepare: seed blend (`estimate_font_size_pt`: 86% page baseline, 42nd
-     percentile, pitch-scaled; 14% block; clamp 8.4–14.2), body and non-body
-     leading (`estimate_leading_em`), first-line ink floors;
+  1. prepare: short-region expansion (`_apply_short_body_region_expansion`:
+     a short, narrow non-body text item under two same-column body anchors is
+     widened by up to 30% of its width, never past the anchors; the 5% top
+     lift is not ported because box tops are fixed;
+     `fitOptions.retainRegionExpansion: false` skips it), seed blend
+     (`estimate_font_size_pt`: 86% page baseline, 42nd percentile,
+     pitch-scaled; 14% block; clamp 8.4–14.2), body and non-body leading
+     (`estimate_leading_em`), first-line ink floors;
   2. schedule non-body text (`fit_translated_block_metrics`, non-body
      branch). These nodes are *unsettled* until step 7: for others they block
      only with the ink inside their own box;
@@ -212,14 +224,25 @@ What the switch selects:
      aggressive gate before the emergency floor; `fitOptions.
      retainFaithfulSchedule: false` restores the earlier density
      approximation);
-  4. unify to the book target (25th percentile of stable anchors);
-  5. underfill grow → harmonize → recover; unify again → recover again;
+  4. short-body inheritance (`inherit_short_body_fonts`, passes/retain-smoothing.js),
+     then unify to the book target (25th percentile of stable anchors);
+  5. underfill grow → harmonize → recover; page body anchor → long-paragraph
+     harmonizing → adjacent smoothing (passes/retain-smoothing.js); unify
+     again → recover again. This is body_pipeline.py's order under
+     FONT_UNIFY_MODE "role_min": the second unify raises eligible paragraphs
+     back to the book target, so the page anchor and adjacent smoothing
+     change little where unify applies (as in retain-pdf);
   6. annotation fonts (`unify_annotation_fonts` + the body cap: caption ≤
      0.88 ×, footnote ≤ 0.82 × the body median);
   7. non-body safety net.
   Every size or leading a rule asks for is checked against the ink collision
   test. On failure: a first line touched by ink from above gets a lower ink
-  floor; then leading is given back down to `BODY_/NON_BODY_LEADING_MIN`
+  floor; ink reaching the node below first pushes that node's first line
+  down, then lifts this node's first line into free space above (each at most
+  0.5 em of the moved node and 40% of its box, and only if everything still
+  passes; `fitOptions.retainPushLowerFirstLine: false` skips both — not
+  retain-pdf rules, which would overprint here); then leading is given back
+  down to `BODY_/NON_BODY_LEADING_MIN`
   (`fitOptions.retainLeadingFirstRepair: false` skips this); then the font
   shrinks to the largest size that passes.
 - **Justification** (retain profile defaults): the retain line model paints a
@@ -230,10 +253,12 @@ What the switch selects:
   every line's vertical extent and the collision state are unchanged
   (`config.justifyCap`, `config.balanceLines`).
 
-Not ported from retain-pdf: short / low-height body inheritance, the page
-body anchor, comfort leading, long-paragraph harmonizing, adjacent smoothing,
-the leading refit after unify, the annotation underfill growth, typography
-memory.
+Not ported from retain-pdf: low-height body inheritance (it only sets a
+reference size), `relax_short_body_context_heights`, comfort leading, the
+leading refit after unify, the body tight-gap inset of
+`build_effective_inner_bboxes`, the annotation underfill growth, typography
+memory. Approximated in the smoothing stages: `prefer_typst_fit` and
+continuation groups are not modelled (treated as false / none).
 
 `fitOptions.retainBandFit: true` additionally keeps each body band inside its
 box (Typst `measure() <= fit_height`); retain-pdf itself does not require this.
@@ -243,11 +268,9 @@ formula discount / box height`) with the real line count instead of its
 character-unit estimate, so its thresholds (0.60, 0.80, 0.98, 1.08, 1.18)
 keep their calibration.
 
-Not ported: title fitting (`title_fit`, `title_binary_fit`), short / low-height
-body inheritance, `relax_short_body_context_heights`,
-`apply_page_body_font_anchor`, `restore_comfort_body_leading`,
-`harmonize_long_body_payloads`, `smooth_adjacent_body_payloads`,
-`refit_body_leading_after_font_unify`, `annotate_tall_body_density_heights`,
+Not ported: low-height body inheritance, `relax_short_body_context_heights`,
+`restore_comfort_body_leading`, `refit_body_leading_after_font_unify`,
+`annotate_tall_body_density_heights`,
 the dense-small-box classification (dense = estimated density ≥ 1.08 here),
 compactness / formula-ratio inputs of the leading blend (0 unless a host
 supplies them), typography memory.

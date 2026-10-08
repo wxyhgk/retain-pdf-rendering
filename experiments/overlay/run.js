@@ -38,6 +38,10 @@ function parseArgs(argv) {
     else if (value === "--pages") options.pages = Number(argv[++i]);
     else if (value === "--png") options.png = argv[++i].split(",").map(Number).filter(Number.isFinite);
     else if (value === "--no-drift-check") options.driftCheck = false;
+    // Retain-profile ablations (all on by default in the preset).
+    else if (value === "--no-smoothing") options.retainSmoothing = false;
+    else if (value === "--no-region-expansion") options.retainRegionExpansion = false;
+    else if (value === "--no-push-lift") options.retainPushLowerFirstLine = false;
     else if (value === "--inherit-below") options.inheritBelow = Number(argv[++i]);
     else if (value === "--limiter-rounds") options.limiterRounds = Number(argv[++i]);
     else if (value === "--body-max-factor") options.bodyMaxFactor = Number(argv[++i]);
@@ -227,7 +231,7 @@ print(json.dumps(out))
   // Profile "retain" defaults (engine): retain-pdf's own block fit
   // (retainFaithfulSchedule) and leading-before-font repair
   // (retainLeadingFirstRepair); --no-faithful / --no-leading-first turn them off.
-  const fitOptions = { mode: "translation", bodyMaxFont, strictSourceFit: options.strictSourceFit, bodyNodeFontCaps: Boolean(options.fontCaps), ...(options.retainBandFit ? { retainBandFit: true } : {}), ...(options.retainTitles === false ? { retainTitles: false } : {}), ...(options.faithful === false ? { retainFaithfulSchedule: false } : {}), ...(options.leadingFirst === false ? { retainLeadingFirstRepair: false } : {}) };
+  const fitOptions = { mode: "translation", bodyMaxFont, strictSourceFit: options.strictSourceFit, bodyNodeFontCaps: Boolean(options.fontCaps), ...(options.retainBandFit ? { retainBandFit: true } : {}), ...(options.retainTitles === false ? { retainTitles: false } : {}), ...(options.faithful === false ? { retainFaithfulSchedule: false } : {}), ...(options.leadingFirst === false ? { retainLeadingFirstRepair: false } : {}), ...(options.retainSmoothing === false ? { retainSmoothing: false } : {}), ...(options.retainRegionExpansion === false ? { retainRegionExpansion: false } : {}), ...(options.retainPushLowerFirstLine === false ? { retainPushLowerFirstLine: false } : {}) };
   // RPR_RETAIN_TRACE=file: per body paragraph decision trace of the retain profile.
   const retainTraceRows = [];
   if (process.env.RPR_RETAIN_TRACE) fitOptions.retainTrace = (id, stage, data) => retainTraceRows.push({ id, stage, ...data });
