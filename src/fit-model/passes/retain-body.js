@@ -44,6 +44,8 @@
   const CAP_HEIGHT = 0.729;
   const FONT_STEP = 0.05;     // pdftr_fit_size eps 0.08pt, on a 0.05 grid
   const MIN_FONT = 4.8;
+  // How far a node may shrink to give room back to the node below (yieldFromAbove).
+  const YIELD_MIN_SCALE = 0.85;
   const INK_CLEARANCE = 0.05; // pt kept between a first line's ink and what is above
   // Largest first-line nudge (lift into space above / push of the node below)
   // the safety net may use, in em of the moved node: enough for a formula's
@@ -454,6 +456,44 @@
     const leadingFirstRepair = run.fitOptions.retainLeadingFirstRepair !== false;
     const pushLowerFirst = run.fitOptions.retainPushLowerFirstLine !== false;
 
+    // A node that collides even at the floor gains nothing from shrinking: what it hits does
+    // not move. The usual case is the paragraph above, settled earlier, whose last line spills
+    // its descenders (or a subscript) to where this node's first line sits. The node above was
+    // checked against this node's unsettled ink, so it fitted by a hair; once this node is set
+    // at its own size, its first line meets that spill at every size and used to collapse to
+    // the 4.8 pt floor. Ask the node above to give the room back — tighter leading first, then
+    // a smaller font, never below YIELD_MIN_SCALE of its size — as long as it still passes
+    // every check itself. Returns true when this node then passes at the floor.
+    function yieldFromAbove(node, repairRatio) {
+      const saved = { fontSize: node.style.fontSize, lineRatio: node.style.lineRatio };
+      setStyle(node, MIN_FONT, repairRatio);
+      const hit = collision.textCollisionDetails([node], COLLIDE);
+      node.style.fontSize = saved.fontSize;
+      node.style.lineRatio = saved.lineRatio;
+      const above = hit && hit.blocker;
+      if (!above || above === node || above.retainUnsettled || !above.style) return false;
+      if (!(isBodyNode(above) || isNonBodyText(above))) return false;
+      if (!(nodeBox(above).top < nodeBox(node).top)) return false;
+      const start = { fontSize: above.style.fontSize, lineRatio: above.style.lineRatio };
+      const minRatio = Math.min(start.lineRatio, ratioFor(isBodyNode(above) ? R.BODY_LEADING_MIN : R.NON_BODY_LEADING_MIN));
+      const candidates = [];
+      for (let step = 1; start.lineRatio - step * 0.01 >= minRatio - 1e-9; step++) candidates.push([start.fontSize, start.lineRatio - step * 0.01]);
+      const lowest = Math.max(MIN_FONT, start.fontSize * YIELD_MIN_SCALE);
+      for (let step = 1; start.fontSize - step * FONT_STEP >= lowest - 1e-9; step++) candidates.push([start.fontSize - step * FONT_STEP, minRatio]);
+      for (const [fontSize, lineRatio] of candidates) {
+        setStyle(above, fontSize, lineRatio);
+        if (passes(above) && passesAt(node, MIN_FONT, repairRatio)) {
+          if (traceFn) {
+            trace(above, "yield", { from: start.fontSize, fromRatio: start.lineRatio, to: fontSize, toRatio: lineRatio, for: node.id });
+            trace(node, "yielded", { by: above.id });
+          }
+          return true;
+        }
+      }
+      setStyle(above, start.fontSize, start.lineRatio);
+      return false;
+    }
+
     // The safety net after a scheduled size failed: first the first-line ink
     // floor; then, like retain-pdf's emergency path, give back leading (down
     // to minLeadingEm) before font size, then shrink the font at that leading.
@@ -476,7 +516,8 @@
         }
         repairRatio = Math.min(ratio, tight);
       }
-      const floorOk = passesAt(node, MIN_FONT, repairRatio);
+      let floorOk = passesAt(node, MIN_FONT, repairRatio);
+      if (!floorOk && yieldFromAbove(node, repairRatio)) floorOk = true;
       const best = floorOk ? largestPassing(MIN_FONT, font, FONT_STEP, value => passesAt(node, value, repairRatio)) : MIN_FONT;
       setStyle(node, best, repairRatio);
       if (!floorOk) node.fitLabel = "RETAIN block fit at floor";

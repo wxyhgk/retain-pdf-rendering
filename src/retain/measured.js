@@ -110,20 +110,13 @@ const round = (value, digits = 3) => (Number.isFinite(value) ? Number(value.toFi
 
 // options: { outDir, output: "typst" (default) | "pdf", typst: { bin, fontPaths } }
 // output "pdf" writes overlay.pdf directly (output/pdf), without Typst.
-function runMeasured(input, options = {}) {
+// Model + fit, without any output: what runMeasured lays out before it writes the PDF or
+// Typst overlay. Tests and diagnostics call it directly (no font files, no typst binary);
+// fitOptions reaches the fitter (e.g. retainTrace).
+function fitInput(input, { maths, timings = {}, fitOptions = {} } = {}) {
   validate(input);
-  const output = options.output || "typst";
-  if (output !== "typst" && output !== "pdf") throw new Error(`unknown output ${JSON.stringify(output)} (typst | pdf)`);
-  const outDir = path.resolve(options.outDir || "rpr-fit-out");
-  fs.mkdirSync(outDir, { recursive: true });
-  const started = performance.now();
-  const timings = {};
   const job = jobFromInput(input);
-  const fontPaths = (options.typst && options.typst.fontPaths) || [];
-  // Fail before any work when the PDF output cannot find its font files.
-  const fonts = output === "pdf" ? { ...findFamily(fontPaths, "Source Han Serif SC"), fallbacks: findFallbacks(fontPaths) } : null;
 
-  const maths = output === "pdf" ? new MathStore(outDir, { files: false }) : new MathStore(outDir, { stamps: true });
   const renderMathBox = (tex, display) => {
     const entry = maths.get(tex, display);
     // A formula MathJax cannot render stays as plain text in the body font.
@@ -170,15 +163,31 @@ function runMeasured(input, options = {}) {
   mark = performance.now();
   const mathBefore = maths.stats.ms;
   const fitted = fitter.fitDocument(model, {
-    mode: "translation", bodyMaxFont, strictSourceFit: PRESET.strictSourceFit, bodyNodeFontCaps: PRESET.fontCaps
+    ...fitOptions, mode: "translation", bodyMaxFont, strictSourceFit: PRESET.strictSourceFit, bodyNodeFontCaps: PRESET.fontCaps
   });
   timings.fitMs = Math.round(performance.now() - mark - (maths.stats.ms - mathBefore));
+  return { job, model, paint, stats, vectors, fitted, bodyMaxFont, seeds, measurers: { regular: base, bold } };
+}
 
-  mark = performance.now();
+function runMeasured(input, options = {}) {
+  validate(input);
+  const output = options.output || "typst";
+  if (output !== "typst" && output !== "pdf") throw new Error(`unknown output ${JSON.stringify(output)} (typst | pdf)`);
+  const outDir = path.resolve(options.outDir || "rpr-fit-out");
+  fs.mkdirSync(outDir, { recursive: true });
+  const started = performance.now();
+  const timings = {};
+  const fontPaths = (options.typst && options.typst.fontPaths) || [];
+  // Fail before any work when the PDF output cannot find its font files.
+  const fonts = output === "pdf" ? { ...findFamily(fontPaths, "Source Han Serif SC"), fallbacks: findFallbacks(fontPaths) } : null;
+  const maths = output === "pdf" ? new MathStore(outDir, { files: false }) : new MathStore(outDir, { stamps: true });
+  const { job, paint, stats, vectors, fitted, bodyMaxFont, seeds, measurers } = fitInput(input, { maths, timings });
+
+  let mark = performance.now();
   let painted;
   let outputStats = null;
   if (output === "pdf") {
-    const written = overlayPdf(fitted, paint, maths, { fonts, measurers: { regular: base, bold } });
+    const written = overlayPdf(fitted, paint, maths, { fonts, measurers });
     // The layout file is what the PDF was drawn from: read / diff / edit it,
     // and redraw with bin/rpr-layout-pdf.js.
     fs.writeFileSync(path.join(outDir, "layout.json"), formatLayout(written.layout));
@@ -307,4 +316,4 @@ function buildReport({ job, input, fitted, paint, stats, vectors, maths, painted
   };
 }
 
-module.exports = { runMeasured, InputError, FIT_INPUT_SCHEMA, FIT_REPORT_SCHEMA, PRESET };
+module.exports = { runMeasured, fitInput, InputError, FIT_INPUT_SCHEMA, FIT_REPORT_SCHEMA, PRESET };
