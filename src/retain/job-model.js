@@ -260,6 +260,26 @@ function buildModel(job, options = {}) {
           ocrObstacles[index].bbox = result.bbox;
         });
       }
+      // What a repainted text box covers is that text's own source — erased and rewritten — not
+      // part of the figure around it: cut those boxes out of each OCR obstacle (the rule
+      // vectorObstacles applies to drawings). A footnote that OCR left inside its figure's box
+      // (a flowchart's "*If there are three mutually ⊥ C2 axes ...") otherwise hits the figure
+      // at every size and collapses to the 4.8 pt floor.
+      if (options.tightenObstacles) {
+        for (const obstacle of ocrObstacles) {
+          let pieces = [obstacle.bbox];
+          for (const box of textBoxes) pieces = pieces.flatMap(rect => VectorObstacles.subtract(rect, box));
+          // Slivers from two nearly identical text boxes (OCR box vs paint cover) carry nothing.
+          pieces = pieces.filter(rect => rect[2] - rect[0] >= 1 && rect[3] - rect[1] >= 1);
+          if (pieces.length === 1 && pieces[0].every((value, i) => Math.abs(value - obstacle.bbox[i]) < 1e-6)) continue;
+          stats.obstaclesCut = (stats.obstaclesCut || 0) + 1;
+          obstacle.uncutBbox = obstacle.bbox;
+          if (!pieces.length) { obstacle.cutAway = true; continue; }
+          obstacle.bbox = pieces[0];
+          pieces.slice(1).forEach((rect, k) => absoluteBlocks.push({ ...obstacle, id: `${obstacle.id}~${k + 1}`, bbox: rect }));
+        }
+        for (let i = absoluteBlocks.length - 1; i >= 0; i--) if (absoluteBlocks[i].cutAway) absoluteBlocks.splice(i, 1);
+      }
       vectors.set(pageIndex, obstacles);
       for (const [key, value] of Object.entries(counts)) stats.vectorCounts[key] = (stats.vectorCounts[key] || 0) + value;
       stats.vectorObstacles += obstacles.length;
