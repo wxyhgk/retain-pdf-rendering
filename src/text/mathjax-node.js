@@ -46,6 +46,16 @@ function loadEngine() {
   return engine;
 }
 
+// MathJax reads a script inside a font command differently from TeX: in `\mathrm{H_aC_aH_b}` it joins
+// adjacent letters into one token, so the subscript `a` swallows the following `C` and the next `_a`
+// is a "Double subscripts" error; `\mathrm{H_ab}` renders without an error but subscripts "ab". In TeX
+// a script without braces takes exactly one token, so bracing single-character scripts is the same
+// formula for TeX and makes MathJax read it the way TeX does. Escaped `\_` / `\^` are left alone.
+const BARE_SCRIPT = /(?<!\\)([_^])([A-Za-z0-9+\-*])/g;
+function normalizeTexForMathJax(tex) {
+  return String(tex || "").replace(BARE_SCRIPT, "$1{$2}");
+}
+
 function exValue(value) {
   const match = /^(-?[\d.]+)ex$/.exec(String(value || "").trim());
   return match ? Number(match[1]) : NaN;
@@ -65,12 +75,14 @@ function createMathRenderer() {
     const { adaptor, html, xHeight, ex } = loadEngine();
     let result;
     try {
-      const node = html.convert(String(tex || ""), { display, em: EM, ex, containerWidth: 80 * EM });
+      const node = html.convert(normalizeTexForMathJax(tex), { display, em: EM, ex, containerWidth: 80 * EM });
       const svg = adaptor.firstChild(node);
       const markup = adaptor.outerHTML(svg);
       // Parse errors become <merror>; unknown macros are kept by the
       // `noundefined` package as red <mtext>. Both mean "not really rendered".
+      // The message sits on the <merror> node (e.g. "Double subscripts: use braces to clarify").
       const error = adaptor.getAttribute(svg, "data-mjx-error")
+        || (/data-mjx-error="([^"]+)"/.exec(markup) || [])[1]
         || (markup.includes('data-mml-node="merror"') ? "merror" : "")
         || (/data-mml-node="mtext" fill="red"/.test(markup) ? "undefined macro" : "");
       const widthEx = exValue(adaptor.getAttribute(svg, "width"));
@@ -114,6 +126,7 @@ const shared = createMathRenderer();
 
 module.exports = {
   createMathRenderer,
+  normalizeTexForMathJax,
   texToSVG: shared.texToSVG,
   renderMathBox: shared.renderMathBox
 };
